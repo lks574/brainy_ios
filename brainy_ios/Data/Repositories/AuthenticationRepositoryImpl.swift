@@ -16,7 +16,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
         // 현재는 로컬 사용자 확인 또는 생성
         
         // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(by: email) {
+        if let existingUser = try localDataSource.fetchUser(byEmail: email) {
             currentUser = existingUser
             return existingUser
         }
@@ -46,7 +46,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
         )
         
         // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(by: googleUser.id) {
+        if let existingUser = try localDataSource.fetchUser(byId: googleUser.id) {
             currentUser = existingUser
             return existingUser
         }
@@ -68,7 +68,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
         )
         
         // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(by: appleUser.id) {
+        if let existingUser = try localDataSource.fetchUser(byId: appleUser.id) {
             currentUser = existingUser
             return existingUser
         }
@@ -99,7 +99,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     
     /// 사용자의 마지막 동기화 시간을 업데이트합니다
     func updateLastSyncTime(userId: String) async throws {
-        guard let user = try localDataSource.fetchUser(by: userId) else {
+        guard let user = try localDataSource.fetchUser(byId: userId) else {
             throw BrainyError.authenticationFailed("사용자를 찾을 수 없습니다")
         }
         
@@ -113,7 +113,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     
     /// 사용자를 삭제합니다 (계정 탈퇴)
     func deleteUser(userId: String) async throws {
-        guard let user = try localDataSource.fetchUser(by: userId) else {
+        guard let user = try localDataSource.fetchUser(byId: userId) else {
             throw BrainyError.authenticationFailed("사용자를 찾을 수 없습니다")
         }
         

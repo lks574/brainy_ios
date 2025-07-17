@@ -96,12 +96,12 @@ extension LocalDataSource {
     }
     
     /// 사용자를 조회합니다
-    func fetchUser(by id: String) throws -> User? {
+    func fetchUser(byId id: String) throws -> User? {
         return try fetchByID(User.self, id: id)
     }
     
     /// 이메일로 사용자를 조회합니다
-    func fetchUser(by email: String) throws -> User? {
+    func fetchUser(byEmail email: String) throws -> User? {
         let allUsers = try fetchAll(User.self)
         return allUsers.first { $0.email == email }
     }

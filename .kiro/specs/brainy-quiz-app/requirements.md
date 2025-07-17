@@ -93,7 +93,8 @@ Brainy는 다양한 형태의 퀴즈를 제공하는 iOS 앱입니다. 사용자
 2. WHEN 데이터를 저장하면 THEN 시스템은 SwiftData를 사용해야 합니다
 3. WHEN 비동기 작업을 수행하면 THEN 시스템은 Swift Concurrency를 사용해야 합니다
 4. WHEN UI를 구성하면 THEN 시스템은 디자인 시스템을 적용해야 합니다
-5. WHEN 앱을 빌드하면 THEN 시스템은 iOS 17 이상에서 동작해야 합니다
-6. WHEN 개발 환경을 설정하면 THEN 시스템은 Xcode 16 이상을 사용해야 합니다
-7. WHEN 외부 라이브러리를 추가하면 THEN 시스템은 Swift Package Manager(SPM)만을 사용해야 합니다
-8. WHEN 폴더 구조를 생성하면 THEN 시스템은 .gitkeep 파일을 생성하지 않아야 합니다
+5. WHEN 색상을 사용하면 THEN 시스템은 Asset Catalog의 GeneratedAssetSymbols 기능을 사용해야 합니다
+6. WHEN 앱을 빌드하면 THEN 시스템은 iOS 17 이상에서 동작해야 합니다
+7. WHEN 개발 환경을 설정하면 THEN 시스템은 Xcode 16 이상을 사용해야 합니다
+8. WHEN 외부 라이브러리를 추가하면 THEN 시스템은 Swift Package Manager(SPM)만을 사용해야 합니다
+9. WHEN 폴더 구조를 생성하면 THEN 시스템은 .gitkeep 파일을 생성하지 않아야 합니다
