@@ -21,7 +21,7 @@
   - 다크모드 지원을 위한 컬러 에셋 설정
   - _Requirements: 8.4, 5.4_
 
-- [ ] 4. SwiftData 저장소 구현
+- [x] 4. SwiftData 저장소 구현
   - ModelContainer 설정 및 데이터베이스 초기화
   - LocalDataSource 클래스로 SwiftData CRUD 작업 구현
   - Repository 구현체에서 로컬 데이터 소스 연동

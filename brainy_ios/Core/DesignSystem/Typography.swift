@@ -33,7 +33,7 @@ extension Font {
 }
 
 // MARK: - Text Styles
-struct BrainyTextStyle {
+public struct BrainyTextStyle {
     let font: Font
     let color: Color
     let lineSpacing: CGFloat
