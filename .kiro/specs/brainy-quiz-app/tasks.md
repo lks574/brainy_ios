@@ -7,7 +7,7 @@
   - SwiftData 프레임워크 추가 및 기본 설정
   - _Requirements: 8.1, 8.5_
 
-- [ ] 2. 코어 도메인 엔티티 및 프로토콜 정의
+- [x] 2. 코어 도메인 엔티티 및 프로토콜 정의
   - User, QuizQuestion, QuizResult, QuizSession SwiftData 모델 구현
   - AuthProvider, QuizCategory, QuizType 등 열거형 정의
   - Repository 프로토콜 인터페이스 정의
