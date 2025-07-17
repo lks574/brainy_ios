@@ -2,6 +2,15 @@ import Foundation
 import SwiftData
 
 extension ModelContainer {
+    /// 공유 ModelContainer 인스턴스
+    static let shared: ModelContainer = {
+        do {
+            return try brainyContainer()
+        } catch {
+            fatalError("ModelContainer 생성 실패: \(error)")
+        }
+    }()
+    
     /// Brainy 앱의 기본 ModelContainer를 생성합니다
     static func brainyContainer() throws -> ModelContainer {
         let schema = Schema([
@@ -44,4 +53,13 @@ extension ModelContainer {
             configurations: [modelConfiguration]
         )
     }
+    
+    /// Preview용 ModelContainer
+    static let preview: ModelContainer = {
+        do {
+            return try brainyTestContainer()
+        } catch {
+            fatalError("Preview ModelContainer 생성 실패: \(error)")
+        }
+    }()
 }

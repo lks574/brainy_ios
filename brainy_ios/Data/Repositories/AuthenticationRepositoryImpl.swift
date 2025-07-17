@@ -1,5 +1,8 @@
 import Foundation
 import SwiftData
+import FirebaseAuth
+import GoogleSignIn
+import AuthenticationServices
 
 /// AuthenticationRepository의 구현체
 @MainActor
@@ -12,75 +15,95 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     }
     
     func signInWithEmail(email: String, password: String) async throws -> User {
-        // TODO: 실제 Firebase Auth 또는 Supabase Auth 연동 필요
-        // 현재는 로컬 사용자 확인 또는 생성
-        
-        // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(byEmail: email) {
-            currentUser = existingUser
-            return existingUser
+        do {
+            // Firebase Auth로 이메일 로그인
+            let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
+            let firebaseUser = authResult.user
+            
+            // 로컬 사용자 확인 또는 생성
+            let user = try await getOrCreateUser(
+                id: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName ?? extractDisplayName(from: email),
+                authProvider: .email
+            )
+            
+            currentUser = user
+            return user
+            
+        } catch let error as NSError {
+            // Firebase Auth 에러 처리
+            throw mapFirebaseError(error)
         }
-        
-        // 새 사용자 생성
-        let newUser = User(
-            id: UUID().uuidString,
-            email: email,
-            displayName: extractDisplayName(from: email),
-            authProvider: .email
-        )
-        
-        try localDataSource.saveUser(newUser)
-        currentUser = newUser
-        return newUser
     }
     
     func signInWithGoogle() async throws -> User {
-        // TODO: Google Sign-In SDK 연동 필요
-        // 현재는 더미 구현
-        
-        let googleUser = User(
-            id: "google_" + UUID().uuidString,
-            email: "user@gmail.com",
-            displayName: "Google User",
-            authProvider: .google
-        )
-        
-        // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(byId: googleUser.id) {
-            currentUser = existingUser
-            return existingUser
+        guard let presentingViewController = await UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first?.windows.first?.rootViewController else {
+            throw BrainyError.authenticationFailed("Google 로그인을 위한 화면을 찾을 수 없습니다.")
         }
         
-        try localDataSource.saveUser(googleUser)
-        currentUser = googleUser
-        return googleUser
+        do {
+            // Google Sign-In 실행
+            let result = try await GoogleSignIn.GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            let googleUser = result.user
+            
+            // Firebase Auth에 Google 자격 증명으로 로그인
+            guard let idToken = googleUser.idToken?.tokenString else {
+                throw BrainyError.authenticationFailed("Google ID 토큰을 가져올 수 없습니다.")
+            }
+            
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: googleUser.accessToken.tokenString)
+            let authResult = try await Auth.auth().signIn(with: credential)
+            let firebaseUser = authResult.user
+            
+            // 로컬 사용자 확인 또는 생성
+            let user = try await getOrCreateUser(
+                id: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName ?? googleUser.profile?.name ?? "Google User",
+                authProvider: .google
+            )
+            
+            currentUser = user
+            return user
+            
+        } catch {
+            throw BrainyError.authenticationFailed("Google 로그인 중 오류가 발생했습니다: \(error.localizedDescription)")
+        }
     }
     
     func signInWithApple() async throws -> User {
-        // TODO: Sign in with Apple 연동 필요
-        // 현재는 더미 구현
-        
-        let appleUser = User(
-            id: "apple_" + UUID().uuidString,
-            email: nil, // Apple 로그인은 이메일이 선택사항
-            displayName: "Apple User",
-            authProvider: .apple
-        )
-        
-        // 기존 사용자 확인
-        if let existingUser = try localDataSource.fetchUser(byId: appleUser.id) {
-            currentUser = existingUser
-            return existingUser
+        return try await withCheckedThrowingContinuation { continuation in
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [.fullName, .email]
+            
+            let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+            let delegate = AppleSignInDelegate { result in
+                continuation.resume(with: result)
+            }
+            
+            authorizationController.delegate = delegate
+            authorizationController.presentationContextProvider = delegate
+            authorizationController.performRequests()
         }
-        
-        try localDataSource.saveUser(appleUser)
-        currentUser = appleUser
-        return appleUser
     }
     
     func signOut() async throws {
-        // TODO: 실제 인증 서비스 로그아웃 처리 필요
-        currentUser = nil
+        do {
+            // Firebase Auth 로그아웃
+            try Auth.auth().signOut()
+            
+            // Google Sign-In 로그아웃
+            GoogleSignIn.GIDSignIn.sharedInstance.signOut()
+            
+            // 현재 사용자 정보 초기화
+            currentUser = nil
+            
+        } catch {
+            throw BrainyError.authenticationFailed("로그아웃 중 오류가 발생했습니다: \(error.localizedDescription)")
+        }
     }
     
     func getCurrentUser() async -> User? {
@@ -144,6 +167,54 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
 // MARK: - Helper Methods
 extension AuthenticationRepositoryImpl {
     
+    /// 사용자를 가져오거나 생성합니다
+    private func getOrCreateUser(
+        id: String,
+        email: String?,
+        displayName: String,
+        authProvider: AuthProvider
+    ) async throws -> User {
+        // 기존 사용자 확인
+        if let existingUser = try localDataSource.fetchUser(byId: id) {
+            return existingUser
+        }
+        
+        // 새 사용자 생성
+        let newUser = User(
+            id: id,
+            email: email,
+            displayName: displayName,
+            authProvider: authProvider
+        )
+        
+        try localDataSource.saveUser(newUser)
+        return newUser
+    }
+    
+    /// Firebase 에러를 BrainyError로 매핑합니다
+    private func mapFirebaseError(_ error: NSError) -> BrainyError {
+        guard let errorCode = AuthErrorCode.Code(rawValue: error.code) else {
+            return BrainyError.authenticationFailed("알 수 없는 인증 오류가 발생했습니다.")
+        }
+        
+        switch errorCode {
+        case .invalidEmail:
+            return BrainyError.validationError("올바르지 않은 이메일 형식입니다.")
+        case .wrongPassword:
+            return BrainyError.authenticationFailed("비밀번호가 올바르지 않습니다.")
+        case .userNotFound:
+            return BrainyError.authenticationFailed("등록되지 않은 사용자입니다.")
+        case .userDisabled:
+            return BrainyError.authenticationFailed("비활성화된 계정입니다.")
+        case .tooManyRequests:
+            return BrainyError.authenticationFailed("너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.")
+        case .networkError:
+            return BrainyError.networkError("네트워크 연결을 확인해주세요.")
+        default:
+            return BrainyError.authenticationFailed("로그인 중 오류가 발생했습니다: \(error.localizedDescription)")
+        }
+    }
+    
     /// 이메일에서 표시 이름을 추출합니다
     private func extractDisplayName(from email: String) -> String {
         let components = email.components(separatedBy: "@")
@@ -160,5 +231,95 @@ extension AuthenticationRepositoryImpl {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
+    }
+}
+
+// MARK: - Apple Sign-In Delegate
+class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    private let completion: (Result<User, Error>) -> Void
+    
+    init(completion: @escaping (Result<User, Error>) -> Void) {
+        self.completion = completion
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        Task { @MainActor in
+            do {
+                if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                    // Apple ID 자격 증명 처리
+                    let userID = appleIDCredential.user
+                    let email = appleIDCredential.email
+                    let fullName = appleIDCredential.fullName
+                    
+                    let displayName = [fullName?.givenName, fullName?.familyName]
+                        .compactMap { $0 }
+                        .joined(separator: " ")
+                        .isEmpty ? "Apple User" : [fullName?.givenName, fullName?.familyName]
+                        .compactMap { $0 }
+                        .joined(separator: " ")
+                    
+                    // Firebase Auth에 Apple 자격 증명으로 로그인
+                    guard let identityToken = appleIDCredential.identityToken,
+                          let identityTokenString = String(data: identityToken, encoding: .utf8) else {
+                        throw BrainyError.authenticationFailed("Apple ID 토큰을 가져올 수 없습니다.")
+                    }
+                    
+                    let credential = OAuthProvider.credential(withProviderID: "apple.com",
+                                                            idToken: identityTokenString,
+                                                            rawNonce: nil)
+                    
+                    let authResult = try await Auth.auth().signIn(with: credential)
+                    let firebaseUser = authResult.user
+                    
+                    // 로컬 사용자 확인 또는 생성
+                    let localDataSource = LocalDataSource(modelContext: ModelContainer.shared.mainContext)
+                    let user = try await self.getOrCreateUser(
+                        localDataSource: localDataSource,
+                        id: firebaseUser.uid,
+                        email: email ?? firebaseUser.email,
+                        displayName: firebaseUser.displayName ?? displayName,
+                        authProvider: .apple
+                    )
+                    
+                    completion(.success(user))
+                }
+            } catch {
+                completion(.failure(BrainyError.authenticationFailed("Apple 로그인 중 오류가 발생했습니다: \(error.localizedDescription)")))
+            }
+        }
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        completion(.failure(BrainyError.authenticationFailed("Apple 로그인이 취소되었거나 오류가 발생했습니다: \(error.localizedDescription)")))
+    }
+    
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first?.windows.first ?? UIWindow()
+    }
+    
+    private func getOrCreateUser(
+        localDataSource: LocalDataSource,
+        id: String,
+        email: String?,
+        displayName: String,
+        authProvider: AuthProvider
+    ) async throws -> User {
+        // 기존 사용자 확인
+        if let existingUser = try localDataSource.fetchUser(byId: id) {
+            return existingUser
+        }
+        
+        // 새 사용자 생성
+        let newUser = User(
+            id: id,
+            email: email,
+            displayName: displayName,
+            authProvider: authProvider
+        )
+        
+        try localDataSource.saveUser(newUser)
+        return newUser
     }
 }

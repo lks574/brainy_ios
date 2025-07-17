@@ -28,7 +28,7 @@
   - 데이터 마이그레이션 및 버전 관리 로직 구현
   - _Requirements: 8.2, 6.3_
 
-- [ ] 5. 인증 시스템 구현
+- [x] 5. 인증 시스템 구현
   - AuthenticationUseCase 도메인 로직 구현
   - 이메일 로그인 기능 구현 (Firebase Auth 또는 Supabase Auth)
   - Sign in with Apple 통합 구현
