@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class QuizSession {
+final class QuizSession: @unchecked Sendable {
     @Attribute(.unique) var id: String
     var userId: String
     var category: QuizCategory

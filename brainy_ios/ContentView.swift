@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     @State private var authViewModel: AuthenticationViewModel
@@ -80,7 +81,7 @@ struct ContentView: View {
                 
                 // 로그아웃 버튼
                 BrainyButton(
-                    title: "로그아웃",
+                    "로그아웃",
                     style: .secondary,
                     isEnabled: !authViewModel.isLoading
                 ) {

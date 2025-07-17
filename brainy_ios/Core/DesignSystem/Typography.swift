@@ -12,11 +12,13 @@ extension Font {
     static let brainyHeadlineSmall = Font.system(size: 18, weight: .medium, design: .default)
     
     // MARK: - Title Fonts
+    static let brainyTitle = Font.system(size: 24, weight: .bold, design: .rounded)
     static let brainyTitleLarge = Font.system(size: 20, weight: .medium, design: .default)
     static let brainyTitleMedium = Font.system(size: 18, weight: .medium, design: .default)
     static let brainyTitleSmall = Font.system(size: 16, weight: .medium, design: .default)
     
     // MARK: - Body Fonts
+    static let brainyBody = Font.system(size: 16, weight: .regular, design: .default)
     static let brainyBodyLarge = Font.system(size: 16, weight: .regular, design: .default)
     static let brainyBodyMedium = Font.system(size: 14, weight: .regular, design: .default)
     static let brainyBodySmall = Font.system(size: 12, weight: .regular, design: .default)
@@ -26,6 +28,12 @@ extension Font {
     static let brainyLabelMedium = Font.system(size: 12, weight: .medium, design: .default)
     static let brainyLabelSmall = Font.system(size: 10, weight: .medium, design: .default)
     
+    // MARK: - Caption Fonts
+    static let brainyCaption = Font.system(size: 12, weight: .regular, design: .default)
+    
+    // MARK: - Button Fonts
+    static let brainyButton = Font.system(size: 16, weight: .medium, design: .default)
+    
     // MARK: - Quiz Specific Fonts
     static let brainyQuizQuestion = Font.system(size: 18, weight: .medium, design: .default)
     static let brainyQuizAnswer = Font.system(size: 16, weight: .regular, design: .default)
@@ -33,7 +41,7 @@ extension Font {
 }
 
 // MARK: - Text Styles
-public struct BrainyTextStyle {
+public struct BrainyTextStyle: Sendable{
     let font: Font
     let color: Color
     let lineSpacing: CGFloat

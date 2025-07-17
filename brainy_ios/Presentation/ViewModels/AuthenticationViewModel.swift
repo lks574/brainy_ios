@@ -162,6 +162,8 @@ class AuthenticationViewModel {
                 return "입력 오류: \(message)"
             case .unknownError(let message):
                 return "알 수 없는 오류: \(message)"
+            default:
+              return "알 수 없는 오류"
             }
         }
         

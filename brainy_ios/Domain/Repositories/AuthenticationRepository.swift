@@ -1,6 +1,6 @@
 import Foundation
 
-protocol AuthenticationRepositoryProtocol {
+protocol AuthenticationRepositoryProtocol: Sendable {
     func signInWithEmail(email: String, password: String) async throws -> User
     func signInWithGoogle() async throws -> User
     func signInWithApple() async throws -> User

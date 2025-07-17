@@ -1,6 +1,6 @@
 import Foundation
 
-protocol AuthenticationUseCaseProtocol {
+protocol AuthenticationUseCaseProtocol: Sendable {
     func signInWithEmail(email: String, password: String) async throws -> User
     func signInWithGoogle() async throws -> User
     func signInWithApple() async throws -> User
@@ -8,7 +8,7 @@ protocol AuthenticationUseCaseProtocol {
     func getCurrentUser() async -> User?
 }
 
-class AuthenticationUseCase: AuthenticationUseCaseProtocol {
+final class AuthenticationUseCase: AuthenticationUseCaseProtocol {
     private let repository: AuthenticationRepositoryProtocol
     
     init(repository: AuthenticationRepositoryProtocol) {

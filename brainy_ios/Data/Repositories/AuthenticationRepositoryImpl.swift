@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
-import FirebaseAuth
-import GoogleSignIn
+@preconcurrency import FirebaseAuth
+@preconcurrency import GoogleSignIn
 import AuthenticationServices
 
 /// AuthenticationRepository의 구현체
@@ -38,7 +38,7 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     }
     
     func signInWithGoogle() async throws -> User {
-        guard let presentingViewController = await UIApplication.shared.connectedScenes
+        guard let presentingViewController = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first?.windows.first?.rootViewController else {
             throw BrainyError.authenticationFailed("Google 로그인을 위한 화면을 찾을 수 없습니다.")
@@ -193,7 +193,7 @@ extension AuthenticationRepositoryImpl {
     
     /// Firebase 에러를 BrainyError로 매핑합니다
     private func mapFirebaseError(_ error: NSError) -> BrainyError {
-        guard let errorCode = AuthErrorCode.Code(rawValue: error.code) else {
+        guard let errorCode = AuthErrorCode(rawValue: error.code) else {
             return BrainyError.authenticationFailed("알 수 없는 인증 오류가 발생했습니다.")
         }
         
@@ -247,7 +247,7 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthor
             do {
                 if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
                     // Apple ID 자격 증명 처리
-                    let userID = appleIDCredential.user
+                    _ = appleIDCredential.user
                     let email = appleIDCredential.email
                     let fullName = appleIDCredential.fullName
                     
@@ -263,11 +263,9 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthor
                           let identityTokenString = String(data: identityToken, encoding: .utf8) else {
                         throw BrainyError.authenticationFailed("Apple ID 토큰을 가져올 수 없습니다.")
                     }
-                    
-                    let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                                            idToken: identityTokenString,
-                                                            rawNonce: nil)
-                    
+
+                    let credential = OAuthProvider.credential(providerID: .apple, accessToken: identityTokenString)
+
                     let authResult = try await Auth.auth().signIn(with: credential)
                     let firebaseUser = authResult.user
                     

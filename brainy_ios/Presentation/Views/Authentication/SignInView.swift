@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import AuthenticationServices
 
 struct SignInView: View {
@@ -106,7 +107,7 @@ struct SignInView: View {
             
             // 로그인 버튼
             BrainyButton(
-                title: viewModel.isLoading ? "로그인 중..." : "이메일로 로그인",
+                viewModel.isLoading ? "로그인 중..." : "이메일로 로그인",
                 style: .primary,
                 isEnabled: viewModel.isSignInButtonEnabled
             ) {
