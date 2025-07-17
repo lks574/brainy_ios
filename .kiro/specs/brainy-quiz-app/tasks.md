@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. 프로젝트 초기 설정 및 기본 구조 생성
+- [x] 1. 프로젝트 초기 설정 및 기본 구조 생성
   - iOS 17+ 타겟으로 Xcode 프로젝트 생성
   - Swift 6 언어 모드 활성화
   - 클린 아키텍처 폴더 구조 생성 (Presentation, Domain, Data, Core)
