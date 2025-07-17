@@ -14,7 +14,7 @@
   - BrainyError 커스텀 에러 타입 구현
   - _Requirements: 8.1, 8.2_
 
-- [ ] 3. 디자인 시스템 기초 구현
+- [x] 3. 디자인 시스템 기초 구현
   - Color extension으로 앱 컬러 팔레트 정의
   - Font extension으로 타이포그래피 시스템 구현
   - 기본 UI 컴포넌트 (BrainyButton, BrainyCard, BrainyTextField) 생성
