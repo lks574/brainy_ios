@@ -98,3 +98,4 @@ Brainy는 다양한 형태의 퀴즈를 제공하는 iOS 앱입니다. 사용자
 7. WHEN 개발 환경을 설정하면 THEN 시스템은 Xcode 16 이상을 사용해야 합니다
 8. WHEN 외부 라이브러리를 추가하면 THEN 시스템은 Swift Package Manager(SPM)만을 사용해야 합니다
 9. WHEN 폴더 구조를 생성하면 THEN 시스템은 .gitkeep 파일을 생성하지 않아야 합니다
+10. WHEN SwiftUI 뷰를 작성하면 THEN 시스템은 #Preview를 생성하지 않아야 합니다

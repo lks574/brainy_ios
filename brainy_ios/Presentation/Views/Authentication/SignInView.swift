@@ -3,11 +3,11 @@ import SwiftData
 import AuthenticationServices
 
 struct SignInView: View {
-    @State private var viewModel: AuthenticationViewModel
+    @ObservedObject var viewModel: AuthenticationViewModel
     @Environment(\.dismiss) private var dismiss
     
     init(viewModel: AuthenticationViewModel) {
-        self._viewModel = State(initialValue: viewModel)
+        self.viewModel = viewModel
     }
     
     var body: some View {
@@ -115,7 +115,6 @@ struct SignInView: View {
                     await viewModel.signInWithEmail()
                 }
             }
-            .disabled(!viewModel.isSignInButtonEnabled)
         }
     }
     
@@ -178,17 +177,4 @@ struct SignInView: View {
             .disabled(!viewModel.isSocialSignInEnabled)
         }
     }
-}
-
-// MARK: - Preview
-#Preview {
-    SignInView(
-        viewModel: AuthenticationViewModel(
-            authenticationUseCase: AuthenticationUseCase(
-                repository: AuthenticationRepositoryImpl(
-                    localDataSource: LocalDataSource(modelContext: ModelContainer.preview.mainContext)
-                )
-            )
-        )
-    )
 }

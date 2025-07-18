@@ -145,33 +145,3 @@ enum BrainyButtonSize {
         }
     }
 }
-
-// MARK: - Preview
-#Preview {
-    VStack(spacing: 16) {
-        BrainyButton("Primary Button", style: .primary) {
-            print("Primary tapped")
-        }
-        
-        BrainyButton("Secondary Button", style: .secondary) {
-            print("Secondary tapped")
-        }
-        
-        BrainyButton("Outline Button", style: .outline) {
-            print("Outline tapped")
-        }
-        
-        BrainyButton("Ghost Button", style: .ghost) {
-            print("Ghost tapped")
-        }
-        
-        BrainyButton("Loading Button", style: .primary, isLoading: true) {
-            print("Loading tapped")
-        }
-        
-        BrainyButton("Disabled Button", style: .primary, isEnabled: false) {
-            print("Disabled tapped")
-        }
-    }
-    .padding()
-}

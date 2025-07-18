@@ -17,9 +17,22 @@
 		938AD8C42E28BBE10001B623 /* brainy_ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = brainy_ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9331AA1A2E29E9E3006E3FC4 /* Exceptions for "brainy_ios" folder in "brainy_ios" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"brainy-ios-Info.plist",
+			);
+			target = 938AD8C32E28BBE10001B623 /* brainy_ios */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		938AD8C62E28BBE10001B623 /* brainy_ios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9331AA1A2E29E9E3006E3FC4 /* Exceptions for "brainy_ios" folder in "brainy_ios" target */,
+			);
 			path = brainy_ios;
 			sourceTree = "<group>";
 		};
@@ -275,6 +288,7 @@
 				DEVELOPMENT_TEAM = QRKC6RN4CT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "brainy-ios-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -303,6 +317,7 @@
 				DEVELOPMENT_TEAM = QRKC6RN4CT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "brainy-ios-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

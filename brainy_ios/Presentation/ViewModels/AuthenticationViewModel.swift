@@ -1,22 +1,22 @@
 import Foundation
 import SwiftUI
+import Combine
 
 @MainActor
-@Observable
-class AuthenticationViewModel {
+class AuthenticationViewModel: ObservableObject {
     // MARK: - Properties
     private let authenticationUseCase: AuthenticationUseCaseProtocol
     
     // UI State
-    var isLoading = false
-    var errorMessage: String?
-    var isAuthenticated = false
-    var currentUser: User?
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var isAuthenticated = false
+    @Published var currentUser: User?
     
     // Form Fields
-    var email = ""
-    var password = ""
-    var showPassword = false
+    @Published var email = ""
+    @Published var password = ""
+    @Published var showPassword = false
     
     // MARK: - Initialization
     init(authenticationUseCase: AuthenticationUseCaseProtocol) {

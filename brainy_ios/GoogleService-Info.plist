@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>716104449504-h3ncnfpldfdu067b8263vn7vrn1kllop.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.716104449504-h3ncnfpldfdu067b8263vn7vrn1kllop</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCmVrlO-r77kT9VHWoEXyPnKWUhTIka0sc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>716104449504</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.sro.brainy-ios</string>
+	<key>PROJECT_ID</key>
+	<string>brainy-daccd</string>
+	<key>STORAGE_BUCKET</key>
+	<string>brainy-daccd.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:716104449504:ios:ef500d130cd598e4167f85</string>
+</dict>
+</plist>

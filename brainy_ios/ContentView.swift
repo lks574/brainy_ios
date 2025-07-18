@@ -7,34 +7,52 @@
 
 import SwiftUI
 import SwiftData
+import Combine
 
 struct ContentView: View {
-    @State private var authViewModel: AuthenticationViewModel
-    @State private var isLoading = true
+    @StateObject private var authViewModel: AuthenticationViewModel
+    @StateObject private var coordinator = AppCoordinator()
+    @State private var isInitializing = true
     
     init() {
         // 의존성 주입 설정
         let localDataSource = LocalDataSource(modelContext: ModelContainer.shared.mainContext)
         let authRepository = AuthenticationRepositoryImpl(localDataSource: localDataSource)
         let authUseCase = AuthenticationUseCase(repository: authRepository)
-        self._authViewModel = State(initialValue: AuthenticationViewModel(authenticationUseCase: authUseCase))
+        self._authViewModel = StateObject(wrappedValue: AuthenticationViewModel(authenticationUseCase: authUseCase))
     }
     
     var body: some View {
         Group {
-            if isLoading {
-                // 로딩 화면
+            switch coordinator.appState {
+            case .loading:
                 loadingView
-            } else if authViewModel.isAuthenticated {
-                // 메인 앱 화면 (임시)
-                mainAppView
-            } else {
-                // 로그인 화면
+            case .authentication:
                 SignInView(viewModel: authViewModel)
+                    .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
+                        if isAuthenticated {
+                            coordinator.navigateToMain()
+                        }
+                    }
+            case .main:
+                MainAppView(coordinator: coordinator, authViewModel: authViewModel)
+                    .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
+                        if !isAuthenticated {
+                            coordinator.navigateToAuthentication()
+                        }
+                    }
             }
         }
         .task {
-            await checkAuthenticationStatus()
+            await initializeApp()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            Task {
+                await handleAppWillEnterForeground()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+            handleAppDidEnterBackground()
         }
     }
     
@@ -56,60 +74,41 @@ struct ContentView: View {
         .background(Color.brainyBackground)
     }
     
-    // MARK: - Main App View (임시)
-    private var mainAppView: some View {
-        NavigationView {
-            VStack(spacing: 32) {
-                Text("🧠")
-                    .font(.system(size: 80))
-                
-                Text("환영합니다!")
-                    .font(.brainyTitle)
-                    .foregroundColor(.brainyText)
-                
-                Text("안녕하세요, \(authViewModel.userDisplayName)님")
-                    .font(.brainyBody)
-                    .foregroundColor(.brainyTextSecondary)
-                
-                if !authViewModel.userEmail.isEmpty {
-                    Text(authViewModel.userEmail)
-                        .font(.brainyCaption)
-                        .foregroundColor(.brainyTextSecondary)
-                }
-                
-                Spacer()
-                
-                // 로그아웃 버튼
-                BrainyButton(
-                    "로그아웃",
-                    style: .secondary,
-                    isEnabled: !authViewModel.isLoading
-                ) {
-                    Task {
-                        await authViewModel.signOut()
-                    }
-                }
-                .padding(.horizontal, 24)
-            }
-            .padding(.vertical, 32)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.brainyBackground)
-            .navigationBarHidden(true)
-        }
-    }
+
     
-    // MARK: - Helper Methods
-    private func checkAuthenticationStatus() async {
+    // MARK: - App Lifecycle Methods
+    
+    /// 앱 초기화
+    private func initializeApp() async {
+        coordinator.setAppState(.loading)
+        
         // 인증 상태 확인
         await authViewModel.checkCurrentUser()
         
-        // 로딩 완료
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isLoading = false
+        // 인증 상태에 따라 화면 전환
+        if authViewModel.isAuthenticated {
+            coordinator.navigateToMain()
+        } else {
+            coordinator.navigateToAuthentication()
+        }
+        
+        isInitializing = false
+    }
+    
+    /// 앱이 포그라운드로 진입할 때 처리
+    private func handleAppWillEnterForeground() async {
+        // 인증 상태 재확인
+        await authViewModel.checkCurrentUser()
+        
+        // 인증이 해제된 경우 로그인 화면으로 이동
+        if !authViewModel.isAuthenticated && coordinator.appState == .main {
+            coordinator.navigateToAuthentication()
         }
     }
-}
-
-#Preview {
-    ContentView()
+    
+    /// 앱이 백그라운드로 진입할 때 처리
+    private func handleAppDidEnterBackground() {
+        // 필요한 경우 데이터 저장 등의 작업 수행
+        // 현재는 특별한 처리 없음
+    }
 }
