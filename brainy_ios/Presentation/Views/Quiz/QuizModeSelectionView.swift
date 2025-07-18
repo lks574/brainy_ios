@@ -3,6 +3,7 @@ import SwiftUI
 /// 퀴즈 모드 선택 화면
 struct QuizModeSelectionView: View {
     @ObservedObject var coordinator: AppCoordinator
+    @State private var selectedQuizType: QuizType?
     
     var body: some View {
         VStack(spacing: 32) {
@@ -49,8 +50,10 @@ struct QuizModeSelectionView: View {
                 icon: "pencil.and.outline",
                 title: "주관식 퀴즈",
                 description: "직접 답을 입력하는 퀴즈",
-                quizType: .shortAnswer
+                quizType: .shortAnswer,
+                isSelected: selectedQuizType == .shortAnswer
             ) {
+                selectedQuizType = .shortAnswer
                 coordinator.navigateToCategorySelection(quizMode: .individual)
             }
             
@@ -59,8 +62,10 @@ struct QuizModeSelectionView: View {
                 icon: "list.bullet.circle",
                 title: "객관식 퀴즈",
                 description: "선택지에서 답을 고르는 퀴즈",
-                quizType: .multipleChoice
+                quizType: .multipleChoice,
+                isSelected: selectedQuizType == .multipleChoice
             ) {
+                selectedQuizType = .multipleChoice
                 coordinator.navigateToCategorySelection(quizMode: .individual)
             }
             
@@ -70,9 +75,11 @@ struct QuizModeSelectionView: View {
                 title: "음성모드 퀴즈",
                 description: "음성으로 듣고 답하는 퀴즈",
                 quizType: .voice,
-                isEnabled: false
+                isEnabled: false,
+                isSelected: selectedQuizType == .voice
             ) {
                 // TODO: 음성모드 구현 후 활성화
+                selectedQuizType = .voice
             }
             
             // AI 모드 퀴즈 (미구현)
@@ -81,9 +88,11 @@ struct QuizModeSelectionView: View {
                 title: "AI 모드 퀴즈",
                 description: "AI가 생성하는 동적 퀴즈",
                 quizType: .ai,
-                isEnabled: false
+                isEnabled: false,
+                isSelected: selectedQuizType == .ai
             ) {
                 // TODO: AI 모드 구현 후 활성화
+                selectedQuizType = .ai
             }
         }
     }
@@ -141,6 +150,7 @@ private struct QuizModeCard: View {
     let description: String
     let quizType: QuizType
     let isEnabled: Bool
+    let isSelected: Bool
     let action: () -> Void
     
     init(
@@ -149,6 +159,7 @@ private struct QuizModeCard: View {
         description: String,
         quizType: QuizType,
         isEnabled: Bool = true,
+        isSelected: Bool = false,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -156,6 +167,7 @@ private struct QuizModeCard: View {
         self.description = description
         self.quizType = quizType
         self.isEnabled = isEnabled
+        self.isSelected = isSelected
         self.action = action
     }
     
@@ -164,51 +176,106 @@ private struct QuizModeCard: View {
             HStack(spacing: 16) {
                 // 아이콘
                 Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(isEnabled ? .brainyPrimary : .brainyTextSecondary)
-                    .frame(width: 40, height: 40)
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(iconColor)
+                    .frame(width: 48, height: 48)
                     .background(
                         Circle()
-                            .fill(isEnabled ? Color.brainyPrimary.opacity(0.1) : Color.brainyTextSecondary.opacity(0.1))
+                            .fill(iconBackgroundColor)
                     )
                 
                 // 텍스트
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(title)
                         .font(.brainyHeadlineMedium)
-                        .foregroundColor(isEnabled ? .brainyText : .brainyTextSecondary)
+                        .foregroundColor(titleColor)
+                        .multilineTextAlignment(.leading)
                     
                     Text(description)
-                        .font(.brainyCaption)
+                        .font(.brainyBodyMedium)
                         .foregroundColor(.brainyTextSecondary)
+                        .multilineTextAlignment(.leading)
                 }
                 
                 Spacer()
                 
-                // 화살표 또는 비활성화 표시
-                if isEnabled {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.brainyTextSecondary)
-                } else {
-                    Text("준비중")
-                        .font(.brainyCaption)
-                        .foregroundColor(.brainyTextSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.brainyTextSecondary.opacity(0.1))
-                        .cornerRadius(8)
-                }
+                // 상태 표시
+                statusIndicator
             }
-            .padding(16)
-            .background(Color.brainyCardBackground)
+            .padding(20)
+            .background(cardBackgroundColor)
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.brainySecondary.opacity(0.2), lineWidth: 1)
+                    .stroke(borderColor, lineWidth: borderWidth)
             )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .disabled(!isEnabled)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var iconColor: Color {
+        if !isEnabled {
+            return .brainyTextSecondary
+        }
+        return isSelected ? .white : .brainyPrimary
+    }
+    
+    private var iconBackgroundColor: Color {
+        if !isEnabled {
+            return Color.brainyTextSecondary.opacity(0.1)
+        }
+        return isSelected ? .brainyPrimary : Color.brainyPrimary.opacity(0.1)
+    }
+    
+    private var titleColor: Color {
+        if !isEnabled {
+            return .brainyTextSecondary
+        }
+        return isSelected ? .brainyPrimary : .brainyText
+    }
+    
+    private var cardBackgroundColor: Color {
+        if isSelected {
+            return Color.brainyPrimary.opacity(0.05)
+        }
+        return .brainyCardBackground
+    }
+    
+    private var borderColor: Color {
+        if !isEnabled {
+            return Color.brainySecondary.opacity(0.2)
+        }
+        return isSelected ? .brainyPrimary : Color.brainySecondary.opacity(0.2)
+    }
+    
+    private var borderWidth: CGFloat {
+        return isSelected ? 2.0 : 1.0
+    }
+    
+    @ViewBuilder
+    private var statusIndicator: some View {
+        if !isEnabled {
+            Text("준비중")
+                .font(.brainyLabelSmall)
+                .foregroundColor(.brainyTextSecondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.brainyTextSecondary.opacity(0.1))
+                .cornerRadius(8)
+        } else if isSelected {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(.brainyPrimary)
+        } else {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.brainyTextSecondary)
+        }
     }
 }
 
