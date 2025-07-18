@@ -72,6 +72,13 @@ class QuizDataFactory {
         // 임시로 더미 구현을 반환합니다
         return MockQuizRepository()
     }
+    
+    /// 인스턴스 메서드로 퀴즈 리포지토리를 생성합니다 (History 화면용)
+    func createQuizRepository() -> QuizRepositoryProtocol {
+        // 실제 앱에서는 ModelContext를 주입받아야 하지만, 
+        // 임시로 더미 구현을 반환합니다
+        return MockQuizRepository()
+    }
 }
 
 /// 임시 Mock 퀴즈 리포지토리 (Task 10 구현을 위한 임시 구현)
@@ -114,7 +121,41 @@ class MockQuizRepository: QuizRepositoryProtocol {
     }
     
     func getQuizHistory(userId: String) async throws -> [QuizSession] {
-        return []
+        // 임시 더미 히스토리 데이터 반환
+        let session1 = QuizSession(
+            id: "session1",
+            userId: userId,
+            category: .general,
+            mode: .individual,
+            totalQuestions: 5
+        )
+        session1.correctAnswers = 4
+        session1.totalTime = 120.0
+        session1.completedAt = Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        
+        let session2 = QuizSession(
+            id: "session2",
+            userId: userId,
+            category: .person,
+            mode: .stage,
+            totalQuestions: 10
+        )
+        session2.correctAnswers = 7
+        session2.totalTime = 300.0
+        session2.completedAt = Calendar.current.date(byAdding: .day, value: -3, to: Date())
+        
+        let session3 = QuizSession(
+            id: "session3",
+            userId: userId,
+            category: .country,
+            mode: .individual,
+            totalQuestions: 8
+        )
+        session3.correctAnswers = 6
+        session3.totalTime = 200.0
+        session3.completedAt = Calendar.current.date(byAdding: .day, value: -7, to: Date())
+        
+        return [session1, session2, session3]
     }
     
     func markQuestionAsCompleted(questionId: String) async throws {
@@ -148,5 +189,78 @@ class MockQuizRepository: QuizRepositoryProtocol {
     
     func isOfflineMode() -> Bool {
         return false
+    }
+    
+    func getQuizResults(userId: String) async throws -> [QuizResult] {
+        // 임시 더미 퀴즈 결과 데이터 반환
+        return [
+            QuizResult(
+                id: "result1",
+                userId: userId,
+                questionId: "1",
+                userAnswer: "서울",
+                isCorrect: true,
+                timeSpent: 15.0,
+                category: .general,
+                quizMode: .individual
+            ),
+            QuizResult(
+                id: "result2",
+                userId: userId,
+                questionId: "2",
+                userAnswer: "한글",
+                isCorrect: true,
+                timeSpent: 20.0,
+                category: .general,
+                quizMode: .individual
+            ),
+            QuizResult(
+                id: "result3",
+                userId: userId,
+                questionId: "3",
+                userAnswer: "지구",
+                isCorrect: false,
+                timeSpent: 25.0,
+                category: .general,
+                quizMode: .individual
+            )
+        ]
+    }
+    
+    func getQuestion(by id: String) async throws -> QuizQuestion? {
+        // 임시 더미 문제 데이터 반환
+        switch id {
+        case "1":
+            return QuizQuestion(
+                id: "1",
+                question: "대한민국의 수도는 어디인가요?",
+                correctAnswer: "서울",
+                category: .general,
+                difficulty: .easy,
+                type: .multipleChoice,
+                options: ["서울", "부산", "대구", "인천"]
+            )
+        case "2":
+            return QuizQuestion(
+                id: "2",
+                question: "세종대왕이 만든 문자는 무엇인가요?",
+                correctAnswer: "한글",
+                category: .general,
+                difficulty: .medium,
+                type: .shortAnswer
+            )
+        case "3":
+            return QuizQuestion(
+                id: "3",
+                question: "태양계에서 가장 큰 행성은?",
+                correctAnswer: "목성",
+                category: .general,
+                difficulty: .medium,
+                type: .multipleChoice,
+                options: ["지구", "목성", "토성", "화성"]
+            )
+        default:
+            return nil
+        }
     }
 }

@@ -7,6 +7,7 @@ extension Font {
     static let brainyDisplaySmall = Font.system(size: 24, weight: .semibold, design: .rounded)
     
     // MARK: - Headline Fonts
+    static let brainyHeadline = Font.system(size: 20, weight: .semibold, design: .default)
     static let brainyHeadlineLarge = Font.system(size: 22, weight: .semibold, design: .default)
     static let brainyHeadlineMedium = Font.system(size: 20, weight: .semibold, design: .default)
     static let brainyHeadlineSmall = Font.system(size: 18, weight: .medium, design: .default)
@@ -48,25 +49,25 @@ public struct BrainyTextStyle: Sendable{
     
     static let displayLarge = BrainyTextStyle(
         font: .brainyDisplayLarge,
-        color: .brainyText,
+        color: Color("BrainyText"),
         lineSpacing: 4
     )
     
     static let headlineLarge = BrainyTextStyle(
         font: .brainyHeadlineLarge,
-        color: .brainyText,
+        color: Color("BrainyText"),
         lineSpacing: 2
     )
     
     static let bodyLarge = BrainyTextStyle(
         font: .brainyBodyLarge,
-        color: .brainyText,
+        color: Color("BrainyText"),
         lineSpacing: 1
     )
     
     static let labelMedium = BrainyTextStyle(
         font: .brainyLabelMedium,
-        color: .brainyTextSecondary,
+        color: Color("BrainyTextSecondary"),
         lineSpacing: 0
     )
 }

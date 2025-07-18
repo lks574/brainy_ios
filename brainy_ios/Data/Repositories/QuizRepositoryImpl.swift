@@ -132,6 +132,16 @@ class QuizRepositoryImpl: QuizRepositoryProtocol {
     func isOfflineMode() -> Bool {
         return quizSyncService.isOfflineMode()
     }
+    
+    /// 사용자의 퀴즈 결과를 조회합니다
+    func getQuizResults(userId: String) async throws -> [QuizResult] {
+        return try localDataSource.fetchQuizResults(by: userId)
+    }
+    
+    /// 특정 문제를 조회합니다
+    func getQuestion(by id: String) async throws -> QuizQuestion? {
+        return try localDataSource.fetchQuizQuestion(by: id)
+    }
 }
 
 // MARK: - Helper Methods

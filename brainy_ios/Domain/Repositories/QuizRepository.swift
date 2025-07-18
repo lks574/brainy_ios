@@ -12,4 +12,6 @@ protocol QuizRepositoryProtocol {
     func forceSync() async throws
     func getSyncStatus() -> QuizSyncStatus
     func isOfflineMode() -> Bool
+    func getQuizResults(userId: String) async throws -> [QuizResult]
+    func getQuestion(by id: String) async throws -> QuizQuestion?
 }
