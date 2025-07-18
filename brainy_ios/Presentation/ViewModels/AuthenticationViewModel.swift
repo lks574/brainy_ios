@@ -1,11 +1,12 @@
 import Foundation
 import SwiftUI
+import SwiftData
 import Combine
 
 @MainActor
 class AuthenticationViewModel: ObservableObject {
     // MARK: - Properties
-    private let authenticationUseCase: AuthenticationUseCaseProtocol
+    private var authenticationUseCase: AuthenticationUseCaseProtocol?
     
     // UI State
     @Published var isLoading = false
@@ -19,17 +20,27 @@ class AuthenticationViewModel: ObservableObject {
     @Published var showPassword = false
     
     // MARK: - Initialization
-    init(authenticationUseCase: AuthenticationUseCaseProtocol) {
-        self.authenticationUseCase = authenticationUseCase
-        Task {
-            await checkCurrentUser()
-        }
+    init() {
+        // Dependencies will be injected later via setupDependencies
+    }
+    
+    /// 의존성을 설정합니다
+    func setupDependencies(modelContext: ModelContext) {
+        let localDataSource = LocalDataSource(modelContext: modelContext)
+        let authRepository = AuthenticationRepositoryImpl(localDataSource: localDataSource)
+        let authUseCase = AuthenticationUseCase(repository: authRepository)
+        self.authenticationUseCase = authUseCase
     }
     
     // MARK: - Authentication Methods
     
     /// 이메일로 로그인
     func signInWithEmail() async {
+        guard let authenticationUseCase = authenticationUseCase else {
+            errorMessage = "인증 서비스가 초기화되지 않았습니다."
+            return
+        }
+        
         guard validateEmailInput() else { return }
         
         isLoading = true
@@ -49,6 +60,11 @@ class AuthenticationViewModel: ObservableObject {
     
     /// Google로 로그인
     func signInWithGoogle() async {
+        guard let authenticationUseCase = authenticationUseCase else {
+            errorMessage = "인증 서비스가 초기화되지 않았습니다."
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
@@ -65,6 +81,11 @@ class AuthenticationViewModel: ObservableObject {
     
     /// Apple로 로그인
     func signInWithApple() async {
+        guard let authenticationUseCase = authenticationUseCase else {
+            errorMessage = "인증 서비스가 초기화되지 않았습니다."
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
@@ -81,6 +102,11 @@ class AuthenticationViewModel: ObservableObject {
     
     /// 로그아웃
     func signOut() async {
+        guard let authenticationUseCase = authenticationUseCase else {
+            errorMessage = "인증 서비스가 초기화되지 않았습니다."
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
@@ -98,6 +124,12 @@ class AuthenticationViewModel: ObservableObject {
     
     /// 현재 사용자 확인
     func checkCurrentUser() async {
+        guard let authenticationUseCase = authenticationUseCase else {
+            isAuthenticated = false
+            currentUser = nil
+            return
+        }
+        
         let user = await authenticationUseCase.getCurrentUser()
         currentUser = user
         isAuthenticated = user != nil

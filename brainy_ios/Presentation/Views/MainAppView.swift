@@ -5,6 +5,7 @@ import SwiftData
 struct MainAppView: View {
     @ObservedObject var coordinator: AppCoordinator
     @ObservedObject var authViewModel: AuthenticationViewModel
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         NavigationStack(path: $coordinator.navigationPath) {
@@ -12,8 +13,13 @@ struct MainAppView: View {
                 .navigationDestination(for: AppCoordinator.MainScreen.self) { screen in
                     destinationView(for: screen)
                 }
+                .navigationBarBackButtonHidden(true)
         }
         .tint(.brainyPrimary)
+        .disabled(coordinator.isNavigationInProgress)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
     }
     
     // MARK: - Navigation Destinations
@@ -40,6 +46,23 @@ struct MainAppView: View {
             
         case .profile:
             ProfileView(coordinator: coordinator, authViewModel: authViewModel)
+        }
+    }
+    
+    // MARK: - Scene Phase Handling
+    private func handleScenePhaseChange(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
+        switch newPhase {
+        case .active:
+            // 앱이 활성화될 때 필요한 처리
+            break
+        case .inactive:
+            // 앱이 비활성화될 때 필요한 처리
+            break
+        case .background:
+            // 앱이 백그라운드로 진입할 때 필요한 처리
+            break
+        @unknown default:
+            break
         }
     }
 }

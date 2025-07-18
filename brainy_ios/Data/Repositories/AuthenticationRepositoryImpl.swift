@@ -15,6 +15,19 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     }
     
     func signInWithEmail(email: String, password: String) async throws -> User {
+        // 개발 모드: 테스트 계정 처리
+        if email == "test@test.com" && password == "123456" {
+            let user = try await getOrCreateUser(
+                id: "test-user-id",
+                email: email,
+                displayName: "테스트 사용자",
+                authProvider: .email
+            )
+            
+            currentUser = user
+            return user
+        }
+        
         do {
             // Firebase Auth로 이메일 로그인
             let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
@@ -107,7 +120,19 @@ class AuthenticationRepositoryImpl: AuthenticationRepositoryProtocol {
     }
     
     func getCurrentUser() async -> User? {
-        return currentUser
+        // 메모리에 현재 사용자가 있다면 반환 (테스트 사용자 포함)
+        if let currentUser = currentUser {
+            return currentUser
+        }
+        
+        // Firebase Auth의 현재 사용자 확인
+        if let firebaseUser = Auth.auth().currentUser {
+            // 로컬 DB에서 사용자 찾기
+            currentUser = try? localDataSource.fetchUser(byId: firebaseUser.uid)
+            return currentUser
+        }
+        
+        return nil
     }
     
     // MARK: - Additional Methods

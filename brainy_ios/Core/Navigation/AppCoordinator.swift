@@ -6,10 +6,19 @@ import Combine
 class AppCoordinator: ObservableObject {
     
     // MARK: - Navigation State
-    enum AppState {
+    enum AppState: Equatable {
         case loading
         case authentication
         case main
+        
+        static func == (lhs: AppState, rhs: AppState) -> Bool {
+            switch (lhs, rhs) {
+            case (.loading, .loading), (.authentication, .authentication), (.main, .main):
+                return true
+            default:
+                return false
+            }
+        }
     }
     
     enum MainScreen {
@@ -26,13 +35,32 @@ class AppCoordinator: ObservableObject {
     @Published var appState: AppState = .loading
     @Published var currentMainScreen: MainScreen = .quizModeSelection
     @Published var navigationPath = NavigationPath()
+    @Published var isNavigationInProgress = false
+    
+    // Navigation history for better back navigation
+    private var navigationHistory: [MainScreen] = []
+    private let maxHistorySize = 10
     
     // MARK: - Navigation Methods
     
     /// 앱 상태를 변경합니다
     func setAppState(_ state: AppState) {
+        guard appState != state else { return }
+        
+        isNavigationInProgress = true
+        
         withAnimation(.easeInOut(duration: 0.3)) {
             appState = state
+        }
+        
+        // 상태 변경 완료 후 플래그 리셋
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.isNavigationInProgress = false
+        }
+        
+        // 상태 변경 시 히스토리 초기화
+        if state == .authentication {
+            clearNavigationHistory()
         }
     }
     
@@ -41,31 +69,44 @@ class AppCoordinator: ObservableObject {
         setAppState(.main)
         currentMainScreen = .quizModeSelection
         navigationPath = NavigationPath()
+        clearNavigationHistory()
+        addToHistory(.quizModeSelection)
     }
     
     /// 인증 화면으로 이동합니다
     func navigateToAuthentication() {
         setAppState(.authentication)
         navigationPath = NavigationPath()
+        clearNavigationHistory()
     }
     
     /// 특정 메인 화면으로 이동합니다
     func navigateToMainScreen(_ screen: MainScreen) {
+        guard !isNavigationInProgress else { return }
+        
         currentMainScreen = screen
         navigationPath.append(screen)
+        addToHistory(screen)
     }
     
     /// 이전 화면으로 돌아갑니다
     func navigateBack() {
+        guard !isNavigationInProgress else { return }
+        
         if !navigationPath.isEmpty {
             navigationPath.removeLast()
+            removeFromHistory()
         }
     }
     
     /// 루트 화면으로 돌아갑니다
     func navigateToRoot() {
+        guard !isNavigationInProgress else { return }
+        
         navigationPath = NavigationPath()
         currentMainScreen = .quizModeSelection
+        clearNavigationHistory()
+        addToHistory(.quizModeSelection)
     }
     
     /// 퀴즈 모드 선택 화면으로 이동합니다
@@ -101,6 +142,56 @@ class AppCoordinator: ObservableObject {
     /// 프로필 화면으로 이동합니다
     func navigateToProfile() {
         navigateToMainScreen(.profile)
+    }
+    
+    // MARK: - Navigation History Management
+    
+    /// 네비게이션 히스토리에 화면 추가
+    private func addToHistory(_ screen: MainScreen) {
+        navigationHistory.append(screen)
+        
+        // 히스토리 크기 제한
+        if navigationHistory.count > maxHistorySize {
+            navigationHistory.removeFirst()
+        }
+    }
+    
+    /// 네비게이션 히스토리에서 마지막 화면 제거
+    private func removeFromHistory() {
+        if !navigationHistory.isEmpty {
+            navigationHistory.removeLast()
+        }
+    }
+    
+    /// 네비게이션 히스토리 초기화
+    private func clearNavigationHistory() {
+        navigationHistory.removeAll()
+    }
+    
+    /// 현재 네비게이션 히스토리 반환
+    var currentNavigationHistory: [MainScreen] {
+        return navigationHistory
+    }
+    
+    /// 특정 화면으로 직접 이동 (히스토리 무시)
+    func navigateDirectlyTo(_ screen: MainScreen) {
+        guard !isNavigationInProgress else { return }
+        
+        currentMainScreen = screen
+        navigationPath = NavigationPath()
+        navigationPath.append(screen)
+        clearNavigationHistory()
+        addToHistory(screen)
+    }
+    
+    /// 네비게이션 스택이 비어있는지 확인
+    var isAtRoot: Bool {
+        return navigationPath.isEmpty
+    }
+    
+    /// 현재 화면 깊이 반환
+    var navigationDepth: Int {
+        return navigationHistory.count
     }
 }
 
