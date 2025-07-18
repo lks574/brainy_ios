@@ -13,6 +13,7 @@ import UIKit
 struct ContentView: View {
     @StateObject private var coordinator = AppCoordinator()
     @StateObject private var authViewModel = AuthenticationViewModel()
+    @StateObject private var settingsManager = SettingsManager()
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var isInitializing = true
@@ -31,7 +32,7 @@ struct ContentView: View {
                         }
                     }
             case .main:
-                MainAppView(coordinator: coordinator, authViewModel: authViewModel)
+                MainAppView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager)
                     .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
                         if !isAuthenticated {
                             coordinator.navigateToAuthentication()
@@ -39,6 +40,7 @@ struct ContentView: View {
                     }
             }
         }
+        .preferredColorScheme(settingsManager.colorScheme)
         .task {
             await initializeApp()
         }

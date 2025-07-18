@@ -86,7 +86,7 @@
   - HistoryDetailView에서 상세 결과 표시 구현
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 13. 프로필 및 설정 화면 구현
+- [x] 13. 프로필 및 설정 화면 구현
   - ProfileView SwiftUI 뷰 구현
   - 사용자 정보 표시 및 로그아웃 기능 구현
   - 다크모드 토글 설정 구현

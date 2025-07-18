@@ -5,6 +5,7 @@ import SwiftData
 struct MainAppView: View {
     @ObservedObject var coordinator: AppCoordinator
     @ObservedObject var authViewModel: AuthenticationViewModel
+    @ObservedObject var settingsManager: SettingsManager
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
@@ -45,7 +46,7 @@ struct MainAppView: View {
             HistoryDetailView(coordinator: coordinator, session: session)
             
         case .profile:
-            ProfileView(coordinator: coordinator, authViewModel: authViewModel)
+            ProfileView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager)
         }
     }
     
