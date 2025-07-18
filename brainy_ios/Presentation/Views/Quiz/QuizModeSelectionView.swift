@@ -54,7 +54,7 @@ struct QuizModeSelectionView: View {
                 isSelected: selectedQuizType == .shortAnswer
             ) {
                 selectedQuizType = .shortAnswer
-                coordinator.navigateToCategorySelection(quizMode: .individual)
+                coordinator.navigateToCategorySelection(quizMode: .individual, quizType: .shortAnswer)
             }
             
             // 객관식 퀴즈
@@ -66,7 +66,7 @@ struct QuizModeSelectionView: View {
                 isSelected: selectedQuizType == .multipleChoice
             ) {
                 selectedQuizType = .multipleChoice
-                coordinator.navigateToCategorySelection(quizMode: .individual)
+                coordinator.navigateToCategorySelection(quizMode: .individual, quizType: .multipleChoice)
             }
             
             // 음성모드 퀴즈 (미구현)

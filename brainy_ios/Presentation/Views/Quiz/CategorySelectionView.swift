@@ -4,6 +4,7 @@ import SwiftUI
 struct CategorySelectionView: View {
     @ObservedObject var coordinator: AppCoordinator
     let quizMode: QuizMode
+    let quizType: QuizType
     
     @State private var selectedCategory: QuizCategory?
     @State private var selectedPlayMode: QuizMode = .individual
@@ -147,7 +148,7 @@ struct CategorySelectionView: View {
                 isEnabled: selectedCategory != nil
             ) {
                 if let category = selectedCategory {
-                    coordinator.navigateToQuizPlay(category: category, mode: selectedPlayMode)
+                    coordinator.navigateToQuizPlay(category: category, mode: selectedPlayMode, type: quizType)
                 }
             }
             

@@ -29,12 +29,12 @@ struct MainAppView: View {
         case .quizModeSelection:
             QuizModeSelectionView(coordinator: coordinator)
             
-        case .categorySelection(let quizMode):
-            CategorySelectionView(coordinator: coordinator, quizMode: quizMode)
+        case .categorySelection(let quizMode, let quizType):
+            CategorySelectionView(coordinator: coordinator, quizMode: quizMode, quizType: quizType)
             
-        case .quizPlay(let category, let mode):
-            QuizPlayView(coordinator: coordinator, category: category, mode: mode)
-            
+        case .quizPlay(let category, let mode, let type):
+          QuizPlayView(coordinator: coordinator, category: category, mode: mode, quizType: type)
+
         case .quizResult(let session):
             QuizResultView(coordinator: coordinator, session: session)
             

@@ -5,6 +5,11 @@ import SwiftData
 @MainActor
 class QuizDataFactory {
     
+    /// 공유 인스턴스
+    static let shared = QuizDataFactory()
+    
+    private init() {}
+    
     /// 퀴즈 데이터 유스케이스를 생성합니다
     static func createQuizDataUseCase(modelContext: ModelContext) -> QuizDataUseCaseProtocol {
         let localDataSource = LocalDataSource(modelContext: modelContext)
@@ -59,5 +64,89 @@ class QuizDataFactory {
         let dataManager = quizDataManager ?? QuizDataManager()
         
         return QuizSyncService(quizDataManager: dataManager, localDataSource: localDataSource)
+    }
+    
+    /// 인스턴스 메서드로 퀴즈 리포지토리를 생성합니다 (임시 구현)
+    func makeQuizRepository() -> QuizRepositoryProtocol {
+        // 실제 앱에서는 ModelContext를 주입받아야 하지만, 
+        // 임시로 더미 구현을 반환합니다
+        return MockQuizRepository()
+    }
+}
+
+/// 임시 Mock 퀴즈 리포지토리 (Task 10 구현을 위한 임시 구현)
+@MainActor
+class MockQuizRepository: QuizRepositoryProtocol {
+    func getQuestions(category: QuizCategory, excludeCompleted: Bool) async throws -> [QuizQuestion] {
+        // 임시 더미 데이터 반환
+        return [
+            QuizQuestion(
+                id: "1",
+                question: "대한민국의 수도는 어디인가요?",
+                correctAnswer: "서울",
+                category: category,
+                difficulty: .easy,
+                type: .multipleChoice,
+                options: ["서울", "부산", "대구", "인천"]
+            ),
+            QuizQuestion(
+                id: "2",
+                question: "세종대왕이 만든 문자는 무엇인가요?",
+                correctAnswer: "한글",
+                category: category,
+                difficulty: .medium,
+                type: .shortAnswer
+            ),
+            QuizQuestion(
+                id: "3",
+                question: "태양계에서 가장 큰 행성은?",
+                correctAnswer: "목성",
+                category: category,
+                difficulty: .medium,
+                type: .multipleChoice,
+                options: ["지구", "목성", "토성", "화성"]
+            )
+        ]
+    }
+    
+    func saveQuizResult(_ result: QuizResult) async throws {
+        // 임시 구현 - 실제로는 저장하지 않음
+    }
+    
+    func getQuizHistory(userId: String) async throws -> [QuizSession] {
+        return []
+    }
+    
+    func markQuestionAsCompleted(questionId: String) async throws {
+        // 임시 구현 - 실제로는 저장하지 않음
+    }
+    
+    func getQuizVersion() async throws -> String {
+        return "1.0.0"
+    }
+    
+    func downloadQuizData() async throws -> [QuizQuestion] {
+        return []
+    }
+    
+    func performInitialDataLoad() async throws {
+        // 임시 구현
+    }
+    
+    func forceSync() async throws {
+        // 임시 구현
+    }
+    
+    func getSyncStatus() -> QuizSyncStatus {
+        return QuizSyncStatus(
+          currentVersion: "1.0.0",
+          totalQuestions: 100,
+          isOffline: false,
+          lastSyncDate: Date()
+        )
+    }
+    
+    func isOfflineMode() -> Bool {
+        return false
     }
 }

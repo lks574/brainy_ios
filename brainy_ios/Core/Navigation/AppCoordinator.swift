@@ -23,8 +23,8 @@ class AppCoordinator: ObservableObject {
     
     enum MainScreen {
         case quizModeSelection
-        case categorySelection(quizMode: QuizMode)
-        case quizPlay(category: QuizCategory, mode: QuizMode)
+        case categorySelection(quizMode: QuizMode, quizType: QuizType)
+        case quizPlay(category: QuizCategory, mode: QuizMode, type: QuizType)
         case quizResult(session: QuizSession)
         case history
         case historyDetail(session: QuizSession)
@@ -115,13 +115,13 @@ class AppCoordinator: ObservableObject {
     }
     
     /// 카테고리 선택 화면으로 이동합니다
-    func navigateToCategorySelection(quizMode: QuizMode) {
-        navigateToMainScreen(.categorySelection(quizMode: quizMode))
+    func navigateToCategorySelection(quizMode: QuizMode, quizType: QuizType) {
+        navigateToMainScreen(.categorySelection(quizMode: quizMode, quizType: quizType))
     }
     
     /// 퀴즈 플레이 화면으로 이동합니다
-    func navigateToQuizPlay(category: QuizCategory, mode: QuizMode) {
-        navigateToMainScreen(.quizPlay(category: category, mode: mode))
+    func navigateToQuizPlay(category: QuizCategory, mode: QuizMode, type: QuizType) {
+        navigateToMainScreen(.quizPlay(category: category, mode: mode, type: type))
     }
     
     /// 퀴즈 결과 화면으로 이동합니다
@@ -201,13 +201,15 @@ extension AppCoordinator.MainScreen: Hashable {
         switch self {
         case .quizModeSelection:
             hasher.combine("quizModeSelection")
-        case .categorySelection(let quizMode):
+        case .categorySelection(let quizMode, let quizType):
             hasher.combine("categorySelection")
             hasher.combine(quizMode)
-        case .quizPlay(let category, let mode):
+            hasher.combine(quizType)
+        case .quizPlay(let category, let mode, let type):
             hasher.combine("quizPlay")
             hasher.combine(category)
             hasher.combine(mode)
+            hasher.combine(type)
         case .quizResult(let session):
             hasher.combine("quizResult")
             hasher.combine(session.id)
@@ -225,10 +227,10 @@ extension AppCoordinator.MainScreen: Hashable {
         switch (lhs, rhs) {
         case (.quizModeSelection, .quizModeSelection):
             return true
-        case (.categorySelection(let lhsMode), .categorySelection(let rhsMode)):
-            return lhsMode == rhsMode
-        case (.quizPlay(let lhsCategory, let lhsMode), .quizPlay(let rhsCategory, let rhsMode)):
-            return lhsCategory == rhsCategory && lhsMode == rhsMode
+        case (.categorySelection(let lhsMode, let lhsType), .categorySelection(let rhsMode, let rhsType)):
+            return lhsMode == rhsMode && lhsType == rhsType
+        case (.quizPlay(let lhsCategory, let lhsMode, let lhsType), .quizPlay(let rhsCategory, let rhsMode, let rhsType)):
+            return lhsCategory == rhsCategory && lhsMode == rhsMode && lhsType == rhsType
         case (.quizResult(let lhsSession), .quizResult(let rhsSession)):
             return lhsSession.id == rhsSession.id
         case (.history, .history):
