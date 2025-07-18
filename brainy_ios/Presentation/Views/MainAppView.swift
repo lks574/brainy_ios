@@ -7,6 +7,10 @@ struct MainAppView: View {
     @ObservedObject var authViewModel: AuthenticationViewModel
     @ObservedObject var settingsManager: SettingsManager
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
+    
+    // SyncViewModel을 State로 관리
+    @State private var syncViewModel: SyncViewModel?
     
     var body: some View {
         NavigationStack(path: $coordinator.navigationPath) {
@@ -20,6 +24,14 @@ struct MainAppView: View {
         .disabled(coordinator.isNavigationInProgress)
         .onChange(of: scenePhase) { oldPhase, newPhase in
             handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
+        .onAppear {
+            if syncViewModel == nil {
+                let localDataSource = LocalDataSource(modelContext: modelContext)
+                let networkService = NetworkService()
+                let syncManager = SyncManager(networkService: networkService, localDataSource: localDataSource)
+                syncViewModel = SyncViewModel(syncManager: syncManager, localDataSource: localDataSource)
+            }
         }
     }
     
@@ -46,7 +58,19 @@ struct MainAppView: View {
             HistoryDetailView(coordinator: coordinator, session: session)
             
         case .profile:
-            ProfileView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager)
+            if let syncViewModel = syncViewModel {
+                ProfileView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager, syncViewModel: syncViewModel)
+            } else {
+                // SyncViewModel이 아직 초기화되지 않은 경우 로딩 표시
+                VStack {
+                    ProgressView()
+                    Text("로딩 중...")
+                        .font(.brainyBody)
+                        .foregroundColor(.brainyTextSecondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.brainyBackground)
+            }
         }
     }
     

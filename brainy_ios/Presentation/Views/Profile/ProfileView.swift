@@ -5,14 +5,13 @@ struct ProfileView: View {
     @State private var coordinator: AppCoordinator
     @State private var authViewModel: AuthenticationViewModel
     @ObservedObject private var settingsManager: SettingsManager
-    @State private var showingSyncAlert = false
-    @State private var syncMessage = ""
-    @State private var isSyncing = false
+    @StateObject private var syncViewModel: SyncViewModel
     
-    init(coordinator: AppCoordinator, authViewModel: AuthenticationViewModel, settingsManager: SettingsManager) {
+    init(coordinator: AppCoordinator, authViewModel: AuthenticationViewModel, settingsManager: SettingsManager, syncViewModel: SyncViewModel) {
         self._coordinator = State(initialValue: coordinator)
         self._authViewModel = State(initialValue: authViewModel)
         self.settingsManager = settingsManager
+        self._syncViewModel = StateObject(wrappedValue: syncViewModel)
     }
     
     var body: some View {
@@ -44,10 +43,19 @@ struct ProfileView: View {
         .background(Color.brainyBackground)
         .navigationBarHidden(true)
         .preferredColorScheme(settingsManager.colorScheme)
-        .alert("동기화", isPresented: $showingSyncAlert) {
-            Button("확인") { }
+        .alert("동기화", isPresented: $syncViewModel.showingSyncAlert) {
+            Button("확인") { 
+                syncViewModel.clearSyncMessage()
+            }
         } message: {
-            Text(syncMessage)
+            Text(syncViewModel.syncMessage)
+        }
+        .task {
+            // 화면 로드 시 동기화 상태 확인
+            if let userId = authViewModel.currentUser?.id {
+                await syncViewModel.updateLastSyncDate(userId: userId)
+                await syncViewModel.checkSyncStatus(userId: userId)
+            }
         }
     }
     
@@ -131,11 +139,12 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 // 데이터 동기화
                 SettingRow(
-                    icon: "arrow.triangle.2.circlepath",
+                    icon: syncViewModel.syncStatusIcon,
                     title: "데이터 동기화",
-                    subtitle: settingsManager.lastSyncDateString,
+                    subtitle: syncViewModel.lastSyncDateString,
                     showChevron: true,
-                    isLoading: isSyncing
+                    isLoading: syncViewModel.isSyncing,
+                    iconColor: syncViewModel.syncStatusColor
                 ) {
                     performSync()
                 }
@@ -285,17 +294,10 @@ struct ProfileView: View {
     }
     
     private func performSync() {
-        guard !isSyncing else { return }
+        guard let userId = authViewModel.currentUser?.id else { return }
         
-        isSyncing = true
-        
-        // TODO: Task 14에서 실제 동기화 로직 구현
-        // 현재는 시뮬레이션
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            settingsManager.lastSyncDate = Date()
-            isSyncing = false
-            syncMessage = "데이터 동기화가 완료되었습니다."
-            showingSyncAlert = true
+        Task {
+            await syncViewModel.syncUserData(userId: userId)
         }
     }
 }
@@ -308,6 +310,7 @@ private struct SettingRow: View {
     let subtitle: String
     let showChevron: Bool
     let isLoading: Bool
+    let iconColor: Color
     let action: () -> Void
     
     init(
@@ -316,6 +319,7 @@ private struct SettingRow: View {
         subtitle: String,
         showChevron: Bool = true,
         isLoading: Bool = false,
+        iconColor: Color = .brainyPrimary,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -323,6 +327,7 @@ private struct SettingRow: View {
         self.subtitle = subtitle
         self.showChevron = showChevron
         self.isLoading = isLoading
+        self.iconColor = iconColor
         self.action = action
     }
     
@@ -331,7 +336,7 @@ private struct SettingRow: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundColor(.brainyPrimary)
+                    .foregroundColor(iconColor)
                     .frame(width: 32, height: 32)
                 
                 VStack(alignment: .leading, spacing: 2) {
