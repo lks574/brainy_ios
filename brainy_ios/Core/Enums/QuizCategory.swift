@@ -1,6 +1,6 @@
 import Foundation
 
-enum QuizCategory: String, CaseIterable, Codable {
+enum QuizCategory: String, CaseIterable, Codable, Sendable {
     case person = "인물"
     case general = "상식"
     case country = "나라"

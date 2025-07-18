@@ -234,7 +234,7 @@ extension AuthenticationRepositoryImpl {
         case .tooManyRequests:
             return BrainyError.authenticationFailed("너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.")
         case .networkError:
-            return BrainyError.networkError("네트워크 연결을 확인해주세요.")
+            return BrainyError.networkError(errorCode.rawValue)
         default:
             return BrainyError.authenticationFailed("로그인 중 오류가 발생했습니다: \(error.localizedDescription)")
         }

@@ -5,9 +5,11 @@ import SwiftData
 @MainActor
 class QuizRepositoryImpl: QuizRepositoryProtocol {
     private let localDataSource: LocalDataSource
+    private let quizSyncService: QuizSyncServiceProtocol
     
-    init(localDataSource: LocalDataSource) {
+    init(localDataSource: LocalDataSource, quizSyncService: QuizSyncServiceProtocol) {
         self.localDataSource = localDataSource
+        self.quizSyncService = quizSyncService
     }
     
     func getQuestions(category: QuizCategory, excludeCompleted: Bool) async throws -> [QuizQuestion] {
@@ -36,15 +38,16 @@ class QuizRepositoryImpl: QuizRepositoryProtocol {
     }
     
     func getQuizVersion() async throws -> String {
-        // TODO: 실제 서버 API 호출로 대체 필요
-        // 현재는 더미 버전 반환
-        return "1.0.0"
+        let syncStatus = quizSyncService.getSyncStatus()
+        return syncStatus.currentVersion ?? "0.0.0"
     }
     
     func downloadQuizData() async throws -> [QuizQuestion] {
-        // TODO: 실제 서버 API 호출로 대체 필요
-        // 현재는 더미 데이터 반환
-        return createSampleQuizData()
+        // 퀴즈 데이터 동기화 수행
+        _ = try await quizSyncService.syncQuizData()
+        
+        // 동기화된 로컬 데이터 반환
+        return try localDataSource.fetchAllQuizQuestions()
     }
     
     // MARK: - Additional Methods
@@ -109,6 +112,26 @@ class QuizRepositoryImpl: QuizRepositoryProtocol {
     func saveQuizData(_ questions: [QuizQuestion]) async throws {
         try localDataSource.saveQuizQuestions(questions)
     }
+    
+    /// 초기 데이터 로드를 수행합니다 (앱 시작 시 호출)
+    func performInitialDataLoad() async throws {
+        try await quizSyncService.performInitialDataLoad()
+    }
+    
+    /// 강제 동기화를 수행합니다 (사용자가 수동으로 요청)
+    func forceSync() async throws {
+        try await quizSyncService.forceSync()
+    }
+    
+    /// 동기화 상태를 확인합니다
+    func getSyncStatus() -> QuizSyncStatus {
+        return quizSyncService.getSyncStatus()
+    }
+    
+    /// 오프라인 모드인지 확인합니다
+    func isOfflineMode() -> Bool {
+        return quizSyncService.isOfflineMode()
+    }
 }
 
 // MARK: - Helper Methods
@@ -164,14 +187,14 @@ extension QuizRepositoryImpl {
 }
 
 // MARK: - Data Models
-struct QuizStatistics {
+struct QuizStatistics: Sendable {
     let totalQuestions: Int
     let correctAnswers: Int
     let totalSessions: Int
     let averageScore: Double
 }
 
-struct CategoryProgress {
+struct CategoryProgress: Sendable {
     let category: QuizCategory
     let totalQuestions: Int
     let completedQuestions: Int
