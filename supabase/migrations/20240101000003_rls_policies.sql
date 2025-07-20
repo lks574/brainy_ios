@@ -15,6 +15,9 @@ CREATE POLICY "Users can view own profile" ON users
 CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert own profile" ON users
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Service role can manage all users (for admin functions)
 CREATE POLICY "Service role can manage users" ON users
   FOR ALL USING (auth.jwt() ->> 'role' = 'service_role');
