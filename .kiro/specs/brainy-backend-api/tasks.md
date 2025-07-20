@@ -7,7 +7,7 @@
   - Supabase CLI 설치 및 로컬 개발 환경 구성
   - _Requirements: 8.1, 8.8_
 
-- [ ] 2. 데이터베이스 스키마 구현
+- [x] 2. 데이터베이스 스키마 구현
   - users, quiz_questions, quiz_results, quiz_sessions, quiz_versions 테이블 생성
   - 기본 인덱스 및 제약조건 설정
   - Row Level Security (RLS) 정책 구현
