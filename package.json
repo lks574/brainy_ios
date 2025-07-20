@@ -1,0 +1,40 @@
+{
+  "name": "brainy-backend-api",
+  "version": "1.0.0",
+  "description": "Backend API for Brainy iOS Quiz App using Supabase",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./scripts/setup-supabase.sh",
+    "dev": "supabase start",
+    "stop": "supabase stop",
+    "status": "supabase status",
+    "reset": "supabase db reset",
+    "check-db": "./scripts/check-db-connection.sh",
+    "studio": "open http://localhost:54323",
+    "logs": "supabase logs",
+    "functions:serve": "supabase functions serve",
+    "functions:new": "supabase functions new",
+    "db:diff": "supabase db diff",
+    "db:push": "supabase db push",
+    "db:pull": "supabase db pull",
+    "gen:types": "supabase gen types typescript --local > types/supabase.ts"
+  },
+  "keywords": [
+    "supabase",
+    "backend",
+    "api",
+    "quiz",
+    "ios",
+    "postgresql",
+    "edge-functions"
+  ],
+  "author": "Brainy Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
