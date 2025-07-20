@@ -208,6 +208,10 @@ struct QuizPlayView: View {
                 .tint(.brainyPrimary)
                 .scaleEffect(y: 2)
                 .padding(.horizontal, 24)
+            
+            // Reward status
+            AdRewardStatusView()
+                .padding(.horizontal, 24)
         }
         .padding(.top, 16)
         .padding(.bottom, 24)
@@ -229,6 +233,12 @@ struct QuizPlayView: View {
                         .cornerRadius(16)
                     
                     Spacer()
+                    
+                    // Reward ad button for hints
+                    RewardedAdButton(title: "힌트") {
+                        // Show hint for current question
+                        showHintForCurrentQuestion()
+                    }
                     
                     Text(category.rawValue)
                         .font(.brainyLabelMedium)
@@ -362,5 +372,11 @@ struct QuizPlayView: View {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
+    }
+    
+    private func showHintForCurrentQuestion() {
+        // TODO: Implement hint functionality
+        // This could show the first letter of the answer, eliminate wrong options, etc.
+        print("Hint requested for current question")
     }
 }

@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import FirebaseCore
 import GoogleSignIn
+import GoogleMobileAds
 
 @main
 struct brainy_iosApp: App {
@@ -25,6 +26,9 @@ struct brainy_iosApp: App {
         }
         
         GoogleSignIn.GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+        
+        // AdMob 초기화
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
     }
     
     var sharedModelContainer: ModelContainer = {

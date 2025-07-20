@@ -409,6 +409,9 @@ class QuizPlayViewModel {
         
         // 퀴즈 세션 완료 처리
         await completeQuizSession()
+        
+        // AdMob 광고 미리 로드 (결과 화면에서 표시하기 위해)
+        AdMobManager.shared.loadInterstitialAd()
     }
     
     /// 퀴즈 세션 완료 처리

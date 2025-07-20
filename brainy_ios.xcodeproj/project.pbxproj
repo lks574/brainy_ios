@@ -11,6 +11,7 @@
 		938AD97D2E28E3930001B623 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 938AD97C2E28E3930001B623 /* GoogleSignInSwift */; };
 		938AD97F2E28E4B90001B623 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 938AD97E2E28E4B90001B623 /* FirebaseCore */; };
 		938AD9812E28E4FC0001B623 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 938AD9802E28E4FC0001B623 /* FirebaseAuth */; };
+		938AD9832E28E5200001B623 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 938AD9822E28E5200001B623 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 				938AD97F2E28E4B90001B623 /* FirebaseCore in Frameworks */,
 				938AD97D2E28E3930001B623 /* GoogleSignInSwift in Frameworks */,
 				938AD9812E28E4FC0001B623 /* FirebaseAuth in Frameworks */,
+				938AD9832E28E5200001B623 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,6 +130,7 @@
 				938AD97C2E28E3930001B623 /* GoogleSignInSwift */,
 				938AD97E2E28E4B90001B623 /* FirebaseCore */,
 				938AD9802E28E4FC0001B623 /* FirebaseAuth */,
+				938AD9822E28E5200001B623 /* GoogleMobileAds */,
 			);
 			productName = brainy_ios;
 			productReference = 938AD8C42E28BBE10001B623 /* brainy_ios.app */;
@@ -164,6 +167,7 @@
 			packageReferences = (
 				938AD9782E28E3680001B623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				938AD9792E28E3930001B623 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				938AD9842E28E5200001B623 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 938AD8C52E28BBE10001B623 /* Products */;
@@ -387,6 +391,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "brainy-ios-Info.plist";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "이 앱은 맞춤형 광고를 제공하기 위해 다른 회사의 앱과 웹사이트에서 사용자의 활동을 추적합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -416,6 +421,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "brainy-ios-Info.plist";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "이 앱은 맞춤형 광고를 제공하기 위해 다른 회사의 앱과 웹사이트에서 사용자의 활동을 추적합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -483,6 +489,14 @@
 				version = 8.0.0;
 			};
 		};
+		938AD9842E28E5200001B623 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = exactVersion;
+				version = 11.12.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -505,6 +519,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 938AD9782E28E3680001B623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		938AD9822E28E5200001B623 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 938AD9842E28E5200001B623 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
