@@ -6,7 +6,7 @@ import UIKit
 actor SyncManager {
     private let networkService: NetworkServiceProtocol
     private let localDataSource: LocalDataSource
-    private var syncInProgress = false
+    public var syncInProgress = false
     
     init(networkService: NetworkServiceProtocol, localDataSource: LocalDataSource) {
         self.networkService = networkService
@@ -89,11 +89,6 @@ actor SyncManager {
                 pendingChanges: 0
             )
         }
-    }
-    
-    /// 동기화가 진행 중인지 확인합니다
-    func isSyncInProgress() -> Bool {
-        return syncInProgress
     }
     
     // MARK: - Private Methods

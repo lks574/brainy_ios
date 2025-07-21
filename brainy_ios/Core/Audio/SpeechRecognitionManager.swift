@@ -140,7 +140,7 @@ final class SpeechRecognitionManager: NSObject, ObservableObject {
         
         isAvailable = speechRecognizer.isAvailable && 
                      SFSpeechRecognizer.authorizationStatus() == .authorized &&
-                     AVAudioSession.sharedInstance().recordPermission == .granted
+                     AVAudioApplication.shared.recordPermission == .granted
     }
     
     private func requestSpeechRecognitionPermission() async -> SFSpeechRecognizerAuthorizationStatus {
@@ -153,7 +153,7 @@ final class SpeechRecognitionManager: NSObject, ObservableObject {
     
     private func requestMicrophonePermission() async -> Bool {
         return await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            AVAudioApplication.requestRecordPermission { granted in
                 continuation.resume(returning: granted)
             }
         }

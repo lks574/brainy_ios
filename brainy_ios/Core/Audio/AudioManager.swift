@@ -141,14 +141,14 @@ final class AudioManager: NSObject, ObservableObject {
     // MARK: - Permission Methods
     private func requestMicrophonePermission() async {
         await withCheckedContinuation { continuation in
-            audioSession.requestRecordPermission { granted in
+            AVAudioApplication.requestRecordPermission { granted in
                 continuation.resume()
             }
         }
     }
     
-    func checkMicrophonePermission() -> AVAudioSession.RecordPermission {
-        return audioSession.recordPermission
+    func checkMicrophonePermission() -> AVAudioApplication.recordPermission {
+        return AVAudioApplication.shared.recordPermission
     }
     
     // MARK: - Private Methods

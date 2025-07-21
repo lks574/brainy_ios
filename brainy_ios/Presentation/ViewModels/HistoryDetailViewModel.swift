@@ -55,16 +55,11 @@ class HistoryDetailViewModel {
         isLoading = true
         errorMessage = nil
         
-        do {
-            // 세션에 해당하는 퀴즈 결과들을 로드
-            await loadQuizResults()
-            
-            // 문제 정보들을 로드
-            await loadQuestions()
-            
-        } catch {
-            errorMessage = handleError(error)
-        }
+        // 세션에 해당하는 퀴즈 결과들을 로드
+        await loadQuizResults()
+        
+        // 문제 정보들을 로드
+        await loadQuestions()
         
         isLoading = false
     }

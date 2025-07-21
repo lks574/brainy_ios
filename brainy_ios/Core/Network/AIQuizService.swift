@@ -434,6 +434,23 @@ struct AIGeneratedQuestion: Codable, Sendable {
         self.relatedTopics = relatedTopics
         self.generatedAt = Date()
     }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, question, correctAnswer, explanation, difficulty, category, hints, relatedTopics
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.question = try container.decode(String.self, forKey: .question)
+        self.correctAnswer = try container.decode(String.self, forKey: .correctAnswer)
+        self.explanation = try container.decode(String.self, forKey: .explanation)
+        self.difficulty = try container.decode(QuizDifficulty.self, forKey: .difficulty)
+        self.category = try container.decode(QuizCategory.self, forKey: .category)
+        self.hints = try container.decodeIfPresent([String].self, forKey: .hints) ?? []
+        self.relatedTopics = try container.decodeIfPresent([String].self, forKey: .relatedTopics) ?? []
+        self.generatedAt = Date()
+    }
 }
 
 /// AI 답안 검증 결과
@@ -512,7 +529,7 @@ enum AIQuizAPIEndpoint: APIEndpoint, Sendable {
 // MARK: - API Request/Response Models
 
 /// AI 문제 생성 요청
-private struct AIQuestionRequest: Codable, Sendable {
+private struct AIQuestionRequest: Encodable, Sendable {
     let category: QuizCategory
     let difficulty: QuizDifficulty
     let previousQuestions: [String]
@@ -528,7 +545,7 @@ struct AIQuestionResponse: Codable, Sendable {
 }
 
 /// AI 답안 검증 요청
-private struct AIValidationRequest: Codable, Sendable {
+private struct AIValidationRequest: Encodable, Sendable {
     let question: String
     let userAnswer: String
     let correctAnswer: String

@@ -2,7 +2,7 @@ import Foundation
 
 /// AI 퀴즈 매니저 - AI 모드 퀴즈의 핵심 로직을 담당
 @MainActor
-final class AIQuizManager: ObservableObject {
+class AIQuizManager: ObservableObject {
     private let aiQuizService: AIQuizServiceProtocol
     private let networkService: NetworkServiceProtocol
     
@@ -50,7 +50,8 @@ final class AIQuizManager: ObservableObject {
             addToQuestionHistory(question.question)
             
         } catch {
-            generationError = handleGenerationError(error)
+            let errorMessage = handleGenerationError(error)
+            generationError = errorMessage
             
             // 에러 발생 시 백업 문제 생성 시도
             await generateFallbackQuestion(for: category)
@@ -61,7 +62,7 @@ final class AIQuizManager: ObservableObject {
     
     /// 사용자 답안을 AI로 검증합니다
     func validateAnswer(userAnswer: String) async -> AIAnswerValidation {
-        guard let currentQuestion = currentAIQuestion else {
+        guard let currentQuestion = self.currentAIQuestion else {
             return AIAnswerValidation(
                 isCorrect: false,
                 confidence: 0.0,
@@ -125,12 +126,12 @@ final class AIQuizManager: ObservableObject {
     }
     
     /// 현재 난이도를 반환합니다
-    func getCurrentDifficulty() -> QuizDifficulty {
+    var currentDifficultyValue: QuizDifficulty {
         return currentDifficulty
     }
     
     /// 최근 성과를 반환합니다
-    func getRecentAccuracy() -> Double {
+    var recentAccuracyValue: Double {
         guard !recentPerformance.isEmpty else { return 0.0 }
         
         let correctCount = recentPerformance.filter { $0 }.count
@@ -141,10 +142,10 @@ final class AIQuizManager: ObservableObject {
     func resetSession() {
         currentAIQuestion = nil
         lastValidation = nil
+        generationError = nil
         recentPerformance.removeAll()
         questionHistory.removeAll()
         currentDifficulty = .medium
-        generationError = nil
     }
     
     /// 특정 난이도로 설정합니다
@@ -191,7 +192,7 @@ final class AIQuizManager: ObservableObject {
         let fallbackQuestions = getFallbackQuestions(for: category)
         
         if let randomQuestion = fallbackQuestions.randomElement() {
-            currentAIQuestion = AIGeneratedQuestion(
+            let question = AIGeneratedQuestion(
                 id: UUID().uuidString,
                 question: randomQuestion.question,
                 correctAnswer: randomQuestion.answer,
@@ -201,6 +202,7 @@ final class AIQuizManager: ObservableObject {
                 hints: randomQuestion.hints,
                 relatedTopics: randomQuestion.topics
             )
+            currentAIQuestion = question
         }
     }
     
