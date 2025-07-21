@@ -15,3 +15,12 @@ protocol QuizRepositoryProtocol {
     func getQuizResults(userId: String) async throws -> [QuizResult]
     func getQuestion(by id: String) async throws -> QuizQuestion?
 }
+
+// MARK: - Extensions for Voice Mode Support
+extension QuizRepositoryProtocol {
+    /// 음성 모드용 퀴즈 문제 조회 (오디오 URL이 있는 문제만)
+    func getVoiceQuestions(category: QuizCategory, excludeCompleted: Bool) async throws -> [QuizQuestion] {
+        let allQuestions = try await getQuestions(category: category, excludeCompleted: excludeCompleted)
+        return allQuestions.filter { $0.type == .voice && $0.audioURL != nil && !$0.audioURL!.isEmpty }
+    }
+}

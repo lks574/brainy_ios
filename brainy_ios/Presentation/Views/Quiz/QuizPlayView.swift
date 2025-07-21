@@ -262,7 +262,9 @@ struct QuizPlayView: View {
                 switch question.type {
                 case .multipleChoice:
                     multipleChoiceView(question: question)
-                case .shortAnswer, .voice, .ai:
+                case .voice:
+                    voiceQuizView(question: question)
+                case .shortAnswer, .ai:
                     shortAnswerView
                 }
             }
@@ -301,6 +303,13 @@ struct QuizPlayView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - Voice Quiz View
+    private func voiceQuizView(question: QuizQuestion) -> some View {
+        VoiceQuizView(question: question) { answer in
+            viewModel.shortAnswerText = answer
         }
     }
     

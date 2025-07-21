@@ -1,5 +1,13 @@
 import Foundation
 
+/// 퀴즈 동기화 상태 정보
+struct QuizSyncStatus: Sendable {
+    let currentVersion: String?
+    let totalQuestions: Int
+    let isOffline: Bool
+    let lastSyncDate: Date?
+}
+
 /// 퀴즈 동기화 서비스 프로토콜
 @MainActor
 protocol QuizSyncServiceProtocol {
