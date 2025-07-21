@@ -1,4 +1,4 @@
-interface ValidationRule {
+export interface ValidationRule {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object'
   required?: boolean
   minLength?: number
@@ -9,7 +9,7 @@ interface ValidationRule {
   enum?: string[]
 }
 
-interface ValidationSchema {
+export interface ValidationSchema {
   [key: string]: ValidationRule
 }
 

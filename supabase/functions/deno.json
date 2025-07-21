@@ -3,6 +3,8 @@
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window"],
-    "strict": true
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   }
 }

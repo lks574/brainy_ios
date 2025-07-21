@@ -34,7 +34,9 @@ export function withRateLimit(
         count: 1,
         resetTime: now + (config.window * 1000)
       })
-      return handler(req)
+      
+      const response = await handler(req)
+      return addRateLimitHeaders(response, config.requests, 1, now + (config.window * 1000))
     }
 
     if (now > entry.resetTime) {
@@ -43,30 +45,61 @@ export function withRateLimit(
         count: 1,
         resetTime: now + (config.window * 1000)
       })
-      return handler(req)
+      
+      const response = await handler(req)
+      return addRateLimitHeaders(response, config.requests, 1, now + (config.window * 1000))
     }
 
     if (entry.count >= config.requests) {
       // Rate limit exceeded
       const resetIn = Math.ceil((entry.resetTime - now) / 1000)
-      return createErrorResponse(
+      const response = createErrorResponse(
         'RATE_LIMIT_EXCEEDED',
         `Rate limit exceeded. Try again in ${resetIn} seconds.`,
         429,
         {
           limit: config.requests,
           window: config.window,
-          resetIn
+          resetIn,
+          retryAfter: resetIn
         }
       )
+      
+      return addRateLimitHeaders(response, config.requests, 0, entry.resetTime, resetIn)
     }
 
     // Increment counter
     entry.count++
     rateLimitStore.set(identifier, entry)
 
-    return handler(req)
+    const response = await handler(req)
+    const remaining = Math.max(0, config.requests - entry.count)
+    return addRateLimitHeaders(response, config.requests, remaining, entry.resetTime)
   }
+}
+
+function addRateLimitHeaders(
+  response: Response, 
+  limit: number, 
+  remaining: number, 
+  resetTime: number, 
+  retryAfter?: number
+): Response {
+  const headers = new Headers(response.headers)
+  
+  headers.set('X-RateLimit-Limit', limit.toString())
+  headers.set('X-RateLimit-Remaining', remaining.toString())
+  headers.set('X-RateLimit-Reset', Math.ceil(resetTime / 1000).toString())
+  
+  if (retryAfter) {
+    headers.set('Retry-After', retryAfter.toString())
+  }
+  
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  })
 }
 
 function getClientIdentifier(req: Request): string {

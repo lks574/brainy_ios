@@ -1,9 +1,7 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
 import { validateRequest } from '../_shared/validation.ts'
 import { createErrorResponse, createSuccessResponse } from '../_shared/response.ts'
-import { withRateLimit, rateLimitConfigs } from '../_shared/rate-limit.ts'
+import { withMiddleware, middlewareConfigs } from '../_shared/middleware.ts'
 
 interface AuthRequest {
   email: string
