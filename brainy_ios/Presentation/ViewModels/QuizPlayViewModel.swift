@@ -111,17 +111,12 @@ class QuizPlayViewModel {
         isLoading = true
         errorMessage = nil
         
-        do {
-            // AI 모드인 경우 특별 처리
-            if quizType == .ai {
-                await startAIQuiz()
-            } else {
-                // 기존 퀴즈 로직
-                await startRegularQuiz()
-            }
-            
-        } catch {
-            errorMessage = handleError(error)
+        // AI 모드인 경우 특별 처리
+        if quizType == .ai {
+            await startAIQuiz()
+        } else {
+            // 기존 퀴즈 로직
+            await startRegularQuiz()
         }
         
         isLoading = false

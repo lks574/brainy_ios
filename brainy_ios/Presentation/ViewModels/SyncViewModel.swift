@@ -127,7 +127,7 @@ class SyncViewModel: ObservableObject {
     
     /// 동기화 진행 상태를 확인합니다
     func checkSyncProgress() async -> Bool {
-        return await syncManager.isSyncInProgress()
+        return await syncManager.syncInProgress
     }
     
     // MARK: - Helper Methods

@@ -96,7 +96,7 @@ struct AIQuizView: View {
                     .font(.caption2)
                     .foregroundColor(.brainyTextSecondary)
                 
-                Text("\(Int(aiQuizManager.getRecentAccuracy() * 100))%")
+                Text("\(Int(aiQuizManager.recentAccuracyValue * 100))%")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.brainyAccent)
@@ -116,13 +116,13 @@ struct AIQuizView: View {
             HStack(spacing: 4) {
                 ForEach(QuizDifficulty.allCases, id: \.self) { difficulty in
                     Circle()
-                        .fill(difficulty == aiQuizManager.getCurrentDifficulty() ? 
+                        .fill(difficulty == aiQuizManager.currentDifficultyValue ? 
                               Color.brainyAccent : Color.brainyTextSecondary.opacity(0.3))
                         .frame(width: 8, height: 8)
                 }
             }
             
-            Text(aiQuizManager.getCurrentDifficulty().rawValue)
+            Text(aiQuizManager.currentDifficultyValue.rawValue)
                 .font(.brainyCaption)
                 .fontWeight(.medium)
                 .foregroundColor(.brainyAccent)
@@ -482,25 +482,3 @@ private struct AIQuizStatItem: View {
         }
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct AIQuizView_Previews: PreviewProvider {
-    static var previews: some View {
-        AIQuizView(
-            category: .general,
-            onQuizComplete: {},
-            onExit: {}
-        )
-        .preferredColorScheme(.light)
-        
-        AIQuizView(
-            category: .person,
-            onQuizComplete: {},
-            onExit: {}
-        )
-        .preferredColorScheme(.dark)
-    }
-}
-#endif
