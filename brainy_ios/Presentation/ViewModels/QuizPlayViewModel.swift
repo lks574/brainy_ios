@@ -17,6 +17,11 @@ class QuizPlayViewModel {
     var isLoading: Bool = false
     var errorMessage: String? = nil
     
+    // AI Quiz support
+    var aiQuizManager: AIQuizManager?
+    var currentAIQuestion: AIGeneratedQuestion?
+    var aiValidationResult: AIAnswerValidation?
+    
     // Timer state
     var timeRemaining: Int = 0
     var totalTime: Int = 0
@@ -38,17 +43,34 @@ class QuizPlayViewModel {
     
     // Computed properties
     var currentQuestion: QuizQuestion? {
-        guard currentQuestionIndex < questions.count else { return nil }
-        return questions[currentQuestionIndex]
+        if quizType == .ai {
+            // AI 모드인 경우 AI 문제를 QuizQuestion으로 변환하여 반환
+            guard let aiQuestion = currentAIQuestion else { return nil }
+            return convertAIQuestionToQuizQuestion(aiQuestion)
+        } else {
+            guard currentQuestionIndex < questions.count else { return nil }
+            return questions[currentQuestionIndex]
+        }
     }
     
     var progress: Double {
-        guard !questions.isEmpty else { return 0 }
-        return Double(currentQuestionIndex) / Double(questions.count)
+        if quizType == .ai {
+            // AI 모드는 최대 10문제로 가정
+            let maxQuestions = 10
+            return Double(currentQuestionIndex) / Double(maxQuestions)
+        } else {
+            guard !questions.isEmpty else { return 0 }
+            return Double(currentQuestionIndex) / Double(questions.count)
+        }
     }
     
     var isLastQuestion: Bool {
-        return currentQuestionIndex >= questions.count - 1
+        if quizType == .ai {
+            // AI 모드는 최대 10문제
+            return currentQuestionIndex >= 9
+        } else {
+            return currentQuestionIndex >= questions.count - 1
+        }
     }
     
     var hasAnswered: Bool {
@@ -77,6 +99,11 @@ class QuizPlayViewModel {
         self.mode = mode
         self.quizType = quizType
         self.excludeCompleted = excludeCompleted
+        
+        // AI 모드인 경우 AI 퀴즈 매니저 초기화
+        if quizType == .ai {
+            self.aiQuizManager = AIQuizManager()
+        }
     }
     
     /// 퀴즈를 시작합니다
@@ -84,6 +111,43 @@ class QuizPlayViewModel {
         isLoading = true
         errorMessage = nil
         
+        do {
+            // AI 모드인 경우 특별 처리
+            if quizType == .ai {
+                await startAIQuiz()
+            } else {
+                // 기존 퀴즈 로직
+                await startRegularQuiz()
+            }
+            
+        } catch {
+            errorMessage = handleError(error)
+        }
+        
+        isLoading = false
+    }
+    
+    /// AI 퀴즈 시작
+    private func startAIQuiz() async {
+        guard let aiManager = aiQuizManager else {
+            errorMessage = "AI 퀴즈 매니저를 초기화할 수 없습니다."
+            return
+        }
+        
+        // AI 퀴즈 세션 생성
+        try? await createQuizSession()
+        
+        // 첫 번째 AI 문제 생성
+        await aiManager.generateQuestion(for: category)
+        currentAIQuestion = aiManager.currentAIQuestion
+        
+        // 퀴즈 상태 초기화
+        initializeQuizState()
+        startCurrentQuestion()
+    }
+    
+    /// 일반 퀴즈 시작
+    private func startRegularQuiz() async {
         do {
             // 퀴즈 문제들을 로드 (향상된 로딩 로직)
             questions = try await loadQuestions()
@@ -94,7 +158,6 @@ class QuizPlayViewModel {
                     "해당 카테고리에 풀지 않은 \(quizType.rawValue) 문제가 없습니다." :
                     "해당 카테고리에 \(quizType.rawValue) 문제가 없습니다."
                 errorMessage = message
-                isLoading = false
                 return
             }
             
@@ -113,10 +176,8 @@ class QuizPlayViewModel {
             startCurrentQuestion()
             
         } catch {
-            errorMessage = handleError(error)
+            errorMessage = "퀴즈를 시작하는 중 오류가 발생했습니다: \(error.localizedDescription)"
         }
-        
-        isLoading = false
     }
     
     /// 문제 로딩 로직 (향상된 버전)
@@ -214,6 +275,52 @@ class QuizPlayViewModel {
     
     /// 답안을 제출합니다 (향상된 버전)
     func submitAnswer() async {
+        // AI 모드인 경우 특별 처리
+        if quizType == .ai {
+            await submitAIAnswer()
+        } else {
+            await submitRegularAnswer()
+        }
+    }
+    
+    /// AI 답안 제출
+    private func submitAIAnswer() async {
+        guard let aiManager = aiQuizManager,
+              let aiQuestion = currentAIQuestion else { return }
+        
+        // 사용자 답안 추출
+        let userAnswer = shortAnswerText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !userAnswer.isEmpty else { return }
+        
+        // AI 검증 수행
+        let validation = await aiManager.validateAnswer(userAnswer: userAnswer)
+        aiValidationResult = validation
+        
+        // 점수 업데이트
+        if validation.isCorrect {
+            score += 1
+        }
+        
+        // 문제 소요 시간 계산
+        let timeSpent = calculateQuestionTime()
+        
+        // AI 문제를 일반 QuizQuestion 형태로 변환하여 저장
+        let quizQuestion = convertAIQuestionToQuizQuestion(aiQuestion)
+        
+        // 퀴즈 결과 생성 및 저장
+        await saveQuestionResult(
+            question: quizQuestion,
+            userAnswer: userAnswer,
+            isCorrect: validation.isCorrect,
+            timeSpent: timeSpent
+        )
+        
+        // 다음 문제 생성 또는 퀴즈 완료
+        await generateNextAIQuestionOrFinish()
+    }
+    
+    /// 일반 답안 제출
+    private func submitRegularAnswer() async {
         guard let question = currentQuestion else { return }
         
         // 사용자 답안 추출
@@ -248,6 +355,37 @@ class QuizPlayViewModel {
             await finishQuiz()
         } else {
             moveToNextQuestion()
+        }
+    }
+    
+    /// AI 문제를 QuizQuestion으로 변환
+    private func convertAIQuestionToQuizQuestion(_ aiQuestion: AIGeneratedQuestion) -> QuizQuestion {
+        return QuizQuestion(
+            id: aiQuestion.id,
+            question: aiQuestion.question,
+            correctAnswer: aiQuestion.correctAnswer,
+            category: aiQuestion.category,
+            difficulty: aiQuestion.difficulty,
+            type: .ai
+        )
+    }
+    
+    /// 다음 AI 문제 생성 또는 퀴즈 완료
+    private func generateNextAIQuestionOrFinish() async {
+        // AI 모드에서는 동적으로 문제 수를 결정 (최대 10문제)
+        let maxQuestions = 10
+        
+        if currentQuestionIndex >= maxQuestions - 1 {
+            await finishQuiz()
+        } else {
+            currentQuestionIndex += 1
+            
+            // 다음 AI 문제 생성
+            if let aiManager = aiQuizManager {
+                await aiManager.generateQuestion(for: category)
+                currentAIQuestion = aiManager.currentAIQuestion
+                startCurrentQuestion()
+            }
         }
     }
     

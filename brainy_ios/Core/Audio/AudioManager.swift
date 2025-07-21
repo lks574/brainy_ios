@@ -15,17 +15,12 @@ final class AudioManager: NSObject, ObservableObject {
     private var audioRecorder: AVAudioRecorder?
     private var audioSession: AVAudioSession
     private var progressTimer: Timer?
+    private var recordingLevelTimer: Timer?
     
     override init() {
         self.audioSession = AVAudioSession.sharedInstance()
         super.init()
         setupAudioSession()
-    }
-    
-    deinit {
-        stopPlayback()
-        stopRecording()
-        progressTimer?.invalidate()
     }
     
     // MARK: - Audio Session Setup
@@ -137,6 +132,8 @@ final class AudioManager: NSObject, ObservableObject {
         audioRecorder = nil
         isRecording = false
         recordingLevel = 0.0
+        recordingLevelTimer?.invalidate()
+        recordingLevelTimer = nil
         
         return url
     }
@@ -172,10 +169,12 @@ final class AudioManager: NSObject, ObservableObject {
     }
     
     private func startRecordingLevelMonitoring() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+        recordingLevelTimer?.invalidate()
+        recordingLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self, self.isRecording else {
-                    timer.invalidate()
+                    self?.recordingLevelTimer?.invalidate()
+                    self?.recordingLevelTimer = nil
                     return
                 }
                 

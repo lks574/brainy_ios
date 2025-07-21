@@ -27,7 +27,7 @@ final class SpeechRecognitionManager: NSObject, ObservableObject {
     }
     
     deinit {
-        stopListening()
+//        stopListening()
     }
     
     // MARK: - Public Methods

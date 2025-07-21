@@ -41,14 +41,41 @@ struct QuizPlayView: View {
             Color.brainyBackground
                 .ignoresSafeArea()
             
-            if viewModel.isLoading {
-                loadingView
-            } else if let errorMessage = viewModel.errorMessage {
-                errorView(errorMessage)
-            } else if viewModel.questions.isEmpty {
-                emptyStateView
+            if quizType == .ai {
+                // AI 모드는 전용 뷰 사용
+                AIQuizView(
+                    category: category,
+                    onQuizComplete: {
+                      // TODO: 실제 사용자 ID로 교체해야 합니다.
+                       let session = QuizSession(
+                           id: UUID().uuidString,
+                           userId: "temp-user-id", // 임시 ID
+                           category: category,
+                           mode: mode,
+                           totalQuestions: 10
+                       )
+                       session.correctAnswers = viewModel.score
+                       session.completedAt = Date()
+                       // TODO: 실제 총 소요 시간으로 교체
+                       // session.totalTime = viewModel.elapsedTime
+
+                       coordinator.navigateToQuizResult(session: session)
+                    },
+                    onExit: {
+                        coordinator.navigateBack()
+                    }
+                )
             } else {
-                quizContentView
+                // 기존 퀴즈 UI
+                if viewModel.isLoading {
+                    loadingView
+                } else if let errorMessage = viewModel.errorMessage {
+                    errorView(errorMessage)
+                } else if viewModel.questions.isEmpty {
+                    emptyStateView
+                } else {
+                    quizContentView
+                }
             }
         }
         .navigationBarHidden(true)
