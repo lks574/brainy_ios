@@ -1,20 +1,6 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Colors
-    static let brainyPrimary = Color("BrainyPrimary")
-    static let brainySecondary = Color("BrainySecondary")
-    static let brainyAccent = Color("BrainyAccent")
-    static let brainySuccess = Color("BrainySuccess")
-    
-    // MARK: - Background Colors
-    static let brainyBackground = Color("BrainyBackground")
-    static let brainyCardBackground = Color("BrainyCardBackground")
-    static let brainySurface = Color("BrainySurface")
-    
-    // MARK: - Text Colors
-    static let brainyText = Color("BrainyText")
-    static let brainyTextSecondary = Color("BrainyTextSecondary")
 
     // MARK: - Semantic Colors
     static let brainyError = Color.red

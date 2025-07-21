@@ -139,15 +139,15 @@ struct HistoryDetailView: View {
                 
                 // Additional stats
                 HStack {
-                    StatItem(title: "모드", value: session.mode.rawValue, icon: "gamecontroller")
+                    HistoryStatItem(title: "모드", value: session.mode.rawValue, icon: "gamecontroller")
                     
                     Spacer()
                     
-                    StatItem(title: "소요시간", value: session.displayDuration, icon: "clock")
+                    HistoryStatItem(title: "소요시간", value: session.displayDuration, icon: "clock")
                     
                     Spacer()
                     
-                    StatItem(title: "문제수", value: "\(session.totalQuestions)개", icon: "doc.text")
+                    HistoryStatItem(title: "문제수", value: "\(session.totalQuestions)개", icon: "doc.text")
                 }
             }
         }
@@ -284,8 +284,8 @@ struct HistoryDetailView: View {
 
 // MARK: - Supporting Views
 
-/// 통계 항목
-struct StatItem: View {
+/// 히스토리 통계 항목
+struct HistoryStatItem: View {
     let title: String
     let value: String
     let icon: String

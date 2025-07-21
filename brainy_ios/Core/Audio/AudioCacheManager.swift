@@ -21,7 +21,7 @@ actor AudioCacheManager {
         self.urlSession = URLSession(configuration: config)
         
         // 캐시 디렉토리 생성
-        createCacheDirectoryIfNeeded()
+        Self.createCacheDirectoryIfNeeded(at: self.cacheDirectory)
     }
     
     // MARK: - Public Methods
@@ -81,7 +81,7 @@ actor AudioCacheManager {
             try fileManager.removeItem(at: cacheDirectory)
         }
         
-        createCacheDirectoryIfNeeded()
+        Self.createCacheDirectoryIfNeeded(at: cacheDirectory)
     }
     
     func getCacheSize() -> Int {
@@ -154,12 +154,12 @@ actor AudioCacheManager {
     }
     
     // MARK: - Private Methods
-    private func createCacheDirectoryIfNeeded() {
+    private static func createCacheDirectoryIfNeeded(at url: URL) {
         let fileManager = FileManager.default
         
-        if !fileManager.fileExists(atPath: cacheDirectory.path) {
+        if !fileManager.fileExists(atPath: url.path) {
             do {
-                try fileManager.createDirectory(at: cacheDirectory, 
+                try fileManager.createDirectory(at: url, 
                                               withIntermediateDirectories: true, 
                                               attributes: nil)
             } catch {
