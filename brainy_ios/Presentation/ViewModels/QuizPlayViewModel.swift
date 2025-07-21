@@ -98,6 +98,11 @@ class QuizPlayViewModel {
                 return
             }
             
+            // 음성 모드인 경우 오디오 파일 미리 로드
+            if quizType == .voice {
+                await preloadAudioFiles()
+            }
+            
             // 퀴즈 세션 생성
             try await createQuizSession()
             
@@ -149,6 +154,15 @@ class QuizPlayViewModel {
             return 10 // 개별 모드는 최대 10문제
         case .stage:
             return 20 // 스테이지 모드는 최대 20문제
+        }
+    }
+    
+    /// 음성 모드용 오디오 파일 미리 로드
+    private func preloadAudioFiles() async {
+        let audioURLs = questions.compactMap { $0.audioURL }.filter { !$0.isEmpty }
+        
+        if !audioURLs.isEmpty {
+            await AudioCacheManager.shared.preloadAudioFiles(urls: audioURLs)
         }
     }
     
