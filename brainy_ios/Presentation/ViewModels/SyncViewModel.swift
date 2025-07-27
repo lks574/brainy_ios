@@ -1,140 +1,111 @@
 import Foundation
 import SwiftUI
 
-/// 동기화 기능을 관리하는 ViewModel
+/// 로컬 우선 동기화 기능을 관리하는 ViewModel
 @MainActor
 class SyncViewModel: ObservableObject {
-    @Published var isSyncing = false
-    @Published var syncStatus: String = ""
-    @Published var lastSyncDate: Date?
+    @Published var syncStatus: SyncStatus = .idle
+    @Published var lastSyncTime: Date?
+    @Published var pendingSyncCount: Int = 0
+    @Published var syncProgress: Double = 0.0
     @Published var showingSyncAlert = false
     @Published var syncMessage = ""
-    @Published var syncError: BrainyError?
+    @Published var isOfflineMode = false
     
-    private let syncManager: SyncManager
-    private let localDataSource: LocalDataSource
+    // 리더보드 관련
+    @Published var cachedLeaderboard: LeaderboardData?
+    @Published var canSyncLeaderboard = true
+    @Published var nextLeaderboardSyncTime: Date?
     
-    init(syncManager: SyncManager, localDataSource: LocalDataSource) {
-        self.syncManager = syncManager
-        self.localDataSource = localDataSource
-    }
+    private let localFirstSyncManager: LocalFirstSyncManager
+    private let localDataManager: LocalDataManager
     
-    // MARK: - Public Methods
-    
-    /// 사용자 데이터를 동기화합니다
-    func syncUserData(userId: String) async {
-        guard !isSyncing else { return }
+    init(localFirstSyncManager: LocalFirstSyncManager, localDataManager: LocalDataManager) {
+        self.localFirstSyncManager = localFirstSyncManager
+        self.localDataManager = localDataManager
         
-        isSyncing = true
-        syncStatus = "동기화 중..."
-        syncError = nil
-        
-        do {
-            // 동기화 실행
-            try await syncManager.syncUserProgress(userId: userId)
-            
-            // 성공 시 UI 업데이트
-            await updateLastSyncDate(userId: userId)
-            syncMessage = "데이터 동기화가 완료되었습니다."
-            syncStatus = "동기화 완료"
-            showingSyncAlert = true
-            
-        } catch let error as BrainyError {
-            // 에러 처리
-            syncError = error
-            syncMessage = error.localizedDescription
-            syncStatus = "동기화 실패"
-            showingSyncAlert = true
-            
-        } catch {
-            // 예상치 못한 에러
-            let brainyError = BrainyError.syncFailed(error.localizedDescription)
-            syncError = brainyError
-            syncMessage = brainyError.localizedDescription
-            syncStatus = "동기화 실패"
-            showingSyncAlert = true
-        }
-        
-        isSyncing = false
-    }
-    
-    /// 서버에서 사용자 데이터를 복원합니다
-    func restoreUserData(userId: String) async {
-        guard !isSyncing else { return }
-        
-        isSyncing = true
-        syncStatus = "데이터 복원 중..."
-        syncError = nil
-        
-        do {
-            // 데이터 복원 실행
-            try await syncManager.restoreUserData(userId: userId)
-            
-            // 성공 시 UI 업데이트
-            await updateLastSyncDate(userId: userId)
-            syncMessage = "데이터 복원이 완료되었습니다."
-            syncStatus = "복원 완료"
-            showingSyncAlert = true
-            
-        } catch let error as BrainyError {
-            // 에러 처리
-            syncError = error
-            syncMessage = error.localizedDescription
-            syncStatus = "복원 실패"
-            showingSyncAlert = true
-            
-        } catch {
-            // 예상치 못한 에러
-            let brainyError = BrainyError.syncFailed(error.localizedDescription)
-            syncError = brainyError
-            syncMessage = brainyError.localizedDescription
-            syncStatus = "복원 실패"
-            showingSyncAlert = true
-        }
-        
-        isSyncing = false
-    }
-    
-    /// 동기화 상태를 확인합니다
-    func checkSyncStatus(userId: String) async {
-        do {
-            let status = try await syncManager.getSyncStatus(userId: userId)
-            
-            if status.isUpToDate {
-                syncStatus = "최신 상태"
-            } else if status.pendingChanges > 0 {
-                syncStatus = "\(status.pendingChanges)개 변경사항 대기 중"
-            } else {
-                syncStatus = "동기화 필요"
-            }
-            
-            lastSyncDate = status.lastSyncAt
-            
-        } catch {
-            syncStatus = "상태 확인 실패"
+        Task {
+            await loadInitialData()
         }
     }
     
-    /// 마지막 동기화 날짜를 업데이트합니다
-    func updateLastSyncDate(userId: String) async {
+    // MARK: - Initialization
+    
+    /// 초기 데이터 로드
+    private func loadInitialData() async {
+        await updateSyncStatus()
+        await loadCachedLeaderboard()
+        await updateOfflineMode()
+        await updateLeaderboardSyncInfo()
+    }
+    
+    // MARK: - Manual Sync Methods
+    
+    /// 수동 동기화 실행 (사용자가 버튼 클릭 시)
+    func performManualSync(for userId: String) async {
+        guard !syncStatus.isInProgress else { return }
+        
         do {
-            let user = try localDataSource.fetchUser(byId: userId)
-            lastSyncDate = user?.lastSyncAt
+            try await localFirstSyncManager.manualSync(for: userId)
+            
+            await updateSyncStatus()
+            await loadCachedLeaderboard()
+            await updateLeaderboardSyncInfo()
+            
+            syncMessage = "동기화가 완료되었습니다."
+            showingSyncAlert = true
+            
         } catch {
-            // 에러 무시 (UI 업데이트만 실패)
+            syncMessage = "동기화 실패: \(error.localizedDescription)"
+            showingSyncAlert = true
         }
     }
     
-    /// 동기화 진행 상태를 확인합니다
-    func checkSyncProgress() async -> Bool {
-        return await syncManager.syncInProgress
+    /// 로컬 데이터 통계 업데이트
+    func updateLocalStats(for userId: String) async {
+        do {
+            let stats = try await localDataManager.calculateLocalStats(for: userId)
+            // 통계 업데이트 완료 (UI에서 별도로 관찰)
+        } catch {
+            print("Failed to update local stats: \(error)")
+        }
     }
     
-    // MARK: - Helper Methods
+    /// 동기화 상태 업데이트
+    private func updateSyncStatus() async {
+        syncStatus = await localFirstSyncManager.syncStatus
+        lastSyncTime = await localFirstSyncManager.lastSyncTime
+        pendingSyncCount = await localFirstSyncManager.pendingSyncCount
+        syncProgress = await localFirstSyncManager.syncProgress
+    }
     
-    /// 마지막 동기화 날짜를 문자열로 포맷합니다
-    var lastSyncDateString: String {
-        guard let lastSyncDate = lastSyncDate else {
+    /// 캐시된 리더보드 로드
+    private func loadCachedLeaderboard() async {
+        cachedLeaderboard = await localFirstSyncManager.getCachedLeaderboard()
+    }
+    
+    /// 오프라인 모드 상태 업데이트
+    private func updateOfflineMode() async {
+        isOfflineMode = await localFirstSyncManager.isOfflineMode()
+    }
+    
+    /// 리더보드 동기화 정보 업데이트
+    private func updateLeaderboardSyncInfo() async {
+        canSyncLeaderboard = await localFirstSyncManager.canSyncLeaderboard()
+        
+        let timeUntilNext = await localFirstSyncManager.timeUntilNextLeaderboardSync()
+        if timeUntilNext > 0 {
+            nextLeaderboardSyncTime = Date().addingTimeInterval(timeUntilNext)
+        } else {
+            nextLeaderboardSyncTime = nil
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    /// 마지막 동기화 시간을 문자열로 포맷
+    var lastSyncTimeString: String {
+        guard let lastSyncTime = lastSyncTime else {
             return "동기화한 적 없음"
         }
         
@@ -142,58 +113,112 @@ class SyncViewModel: ObservableObject {
         let now = Date()
         let calendar = Calendar.current
         
-        // 오늘인지 확인
-        if calendar.isDate(lastSyncDate, inSameDayAs: now) {
+        if calendar.isDate(lastSyncTime, inSameDayAs: now) {
             formatter.dateFormat = "오늘 HH:mm"
-        } 
-        // 어제인지 확인
-        else if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
-                calendar.isDate(lastSyncDate, inSameDayAs: yesterday) {
-            formatter.dateFormat = "'어제' HH:mm"
-        } 
-        // 이번 주인지 확인
-        else if calendar.dateInterval(of: .weekOfYear, for: now)?.contains(lastSyncDate) == true {
+        } else if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
+                  calendar.isDate(lastSyncTime, inSameDayAs: yesterday) {
+            formatter.dateFormat = "어제 HH:mm"
+        } else if calendar.dateInterval(of: .weekOfYear, for: now)?.contains(lastSyncTime) == true {
             formatter.dateFormat = "EEEE HH:mm"
-        } 
-        // 그 외의 경우
-        else {
+        } else {
             formatter.dateFormat = "MM/dd HH:mm"
         }
         
         formatter.locale = Locale(identifier: "ko_KR")
-        return formatter.string(from: lastSyncDate)
+        return formatter.string(from: lastSyncTime)
     }
     
-    /// 동기화 상태 아이콘을 반환합니다
+    /// 동기화 상태 메시지
+    var syncStatusMessage: String {
+        switch syncStatus {
+        case .idle:
+            if pendingSyncCount > 0 {
+                return "\(pendingSyncCount)개 항목 동기화 대기 중"
+            } else {
+                return "최신 상태"
+            }
+        case .syncing(let progress):
+            return "동기화 중... \(Int(progress * 100))%"
+        case .completed:
+            return "동기화 완료"
+        case .failed(let error):
+            return "동기화 실패: \(error.localizedDescription)"
+        }
+    }
+    
+    /// 리더보드 캐시 나이 문자열
+    var leaderboardCacheAgeString: String? {
+        return cachedLeaderboard?.cacheAgeString
+    }
+    
+    /// 다음 리더보드 동기화까지 남은 시간 문자열
+    var nextLeaderboardSyncString: String? {
+        guard let nextTime = nextLeaderboardSyncTime else { return nil }
+        
+        let timeInterval = nextTime.timeIntervalSinceNow
+        let hours = Int(timeInterval / 3600)
+        let minutes = Int((timeInterval.truncatingRemainder(dividingBy: 3600)) / 60)
+        
+        if hours > 0 {
+            return "\(hours)시간 \(minutes)분 후"
+        } else {
+            return "\(minutes)분 후"
+        }
+    }
+    
+    /// 동기화 상태 아이콘
     var syncStatusIcon: String {
-        if isSyncing {
+        switch syncStatus {
+        case .idle:
+            if pendingSyncCount > 0 {
+                return "arrow.triangle.2.circlepath"
+            } else {
+                return "checkmark.circle"
+            }
+        case .syncing:
             return "arrow.triangle.2.circlepath"
-        } else if syncError != nil {
-            return "exclamationmark.triangle"
-        } else if lastSyncDate != nil {
+        case .completed:
             return "checkmark.circle"
-        } else {
-            return "arrow.triangle.2.circlepath"
+        case .failed:
+            return "exclamationmark.triangle"
         }
     }
     
-    /// 동기화 상태 색상을 반환합니다
+    /// 동기화 상태 색상
     var syncStatusColor: Color {
-        if isSyncing {
+        switch syncStatus {
+        case .idle:
+            if pendingSyncCount > 0 {
+                return .brainySecondary
+            } else {
+                return .brainySuccess
+            }
+        case .syncing:
             return .brainyPrimary
-        } else if syncError != nil {
-            return .red
-        } else if lastSyncDate != nil {
+        case .completed:
             return .brainySuccess
-        } else {
-            return .brainyTextSecondary
+        case .failed:
+            return .red
         }
     }
     
-    /// 알림 메시지를 초기화합니다
+    /// 동기화 버튼 활성화 여부
+    var isSyncButtonEnabled: Bool {
+        return !syncStatus.isInProgress && !isOfflineMode
+    }
+    
+    // MARK: - Actions
+    
+    /// 동기화 메시지 초기화
     func clearSyncMessage() {
         syncMessage = ""
-        syncError = nil
         showingSyncAlert = false
+    }
+    
+    /// 상태 새로고침
+    func refreshStatus() async {
+        await updateSyncStatus()
+        await updateOfflineMode()
+        await updateLeaderboardSyncInfo()
     }
 }
