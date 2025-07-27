@@ -20,50 +20,52 @@ struct ContentView: View {
     @State private var lastActiveTime: Date?
     
     var body: some View {
-        Group {
-            switch coordinator.appState {
-            case .loading:
-                loadingView
-            case .authentication:
-                SignInView(viewModel: authViewModel)
-                    .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
-                        if isAuthenticated {
-                            coordinator.navigateToMain()
+        AppConfigurationView {
+            Group {
+                switch coordinator.appState {
+                case .loading:
+                    loadingView
+                case .authentication:
+                    SignInView(viewModel: authViewModel)
+                        .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
+                            if isAuthenticated {
+                                coordinator.navigateToMain()
+                            }
                         }
-                    }
-            case .main:
-                MainAppView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager)
-                    .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
-                        if !isAuthenticated {
-                            coordinator.navigateToAuthentication()
+                case .main:
+                    MainAppView(coordinator: coordinator, authViewModel: authViewModel, settingsManager: settingsManager)
+                        .onReceive(authViewModel.$isAuthenticated) { isAuthenticated in
+                            if !isAuthenticated {
+                                coordinator.navigateToAuthentication()
+                            }
                         }
-                    }
+                }
             }
-        }
-        .preferredColorScheme(settingsManager.colorScheme)
-        .task {
-            await initializeApp()
-        }
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            Task {
-                await handleScenePhaseChange(from: oldPhase, to: newPhase)
+            .preferredColorScheme(settingsManager.colorScheme)
+            .task {
+                await initializeApp()
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            Task {
-                await handleAppWillEnterForeground()
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                Task {
+                    await handleScenePhaseChange(from: oldPhase, to: newPhase)
+                }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            handleAppDidEnterBackground()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            Task {
-                await handleAppDidBecomeActive()
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                Task {
+                    await handleAppWillEnterForeground()
+                }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            handleAppWillResignActive()
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                handleAppDidEnterBackground()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                Task {
+                    await handleAppDidBecomeActive()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                handleAppWillResignActive()
+            }
         }
     }
     
