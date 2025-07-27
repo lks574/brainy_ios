@@ -58,7 +58,9 @@ BrainyApp/
 ### Authentication Module
 
 #### AuthenticationView
+- 정적 설정 기반으로 허용된 로그인 방식만 표시
 - 이메일, Google, Apple 로그인 옵션 제공
+- 앱 버전 호환성 검증 및 업데이트 안내
 - 로그인 상태에 따른 화면 전환 처리
 
 #### AuthenticationViewModel
@@ -68,13 +70,37 @@ class AuthenticationViewModel: ObservableObject {
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var authConfig: AuthStaticConfig?
+    @Published var sessionInfo: SessionInfo?
     
     private let authUseCase: AuthenticationUseCaseProtocol
+    private let configManager: StaticConfigManager
     
+    func loadAuthConfig() async
     func signInWithEmail(email: String, password: String) async
     func signInWithGoogle() async
     func signInWithApple() async
+    func signInAsGuest() async
+    func refreshSession() async
     func signOut() async
+    func validateAppVersion() -> Bool
+}
+
+struct AuthStaticConfig {
+    let authMethodsEnabled: [String]
+    let socialLoginRequired: Bool
+    let guestModeEnabled: Bool
+    let passwordMinLength: Int
+    let sessionTimeoutMinutes: Int
+    let maxLoginAttempts: Int
+    let minAppVersionForAuth: String
+}
+
+struct SessionInfo {
+    let sessionId: String
+    let deviceId: String
+    let expiresAt: Date
+    let lastActivity: Date
 }
 ```
 
@@ -126,18 +152,104 @@ class QuizViewModel: ObservableObject {
 ### Profile Module
 
 #### ProfileView
-- 사용자 정보 표시
+- 로컬 저장된 사용자 정보 표시
 - 설정 옵션 (다크모드, 알림 등)
-- 동기화 버튼
+- 수동 동기화 버튼 및 진행률 표시
+- 동기화 상태 및 마지막 동기화 시간 표시
+- 오프라인 모드 상태 표시
+
+### Static Configuration Module
+
+#### StaticConfigManager
+```swift
+actor StaticConfigManager {
+    private var cachedConfig: StaticConfig?
+    private var lastConfigUpdate: Date?
+    
+    func loadStaticConfig() async throws -> StaticConfig
+    func downloadConfigFromStorage() async throws -> StaticConfig
+    func getCachedConfig() -> StaticConfig?
+    func isConfigExpired() -> Bool
+    func validateConfig(_ config: StaticConfig) -> Bool
+}
+```
+
+### Local-First Data Module
+
+#### LocalDataManager
+```swift
+actor LocalDataManager {
+    private let modelContext: ModelContext
+    
+    // 로컬 우선 데이터 관리
+    func saveQuizResult(_ result: QuizResult) async
+    func loadLocalQuizHistory() async -> [QuizSession]
+    func calculateLocalStats() async -> UserStats
+    func markForSync(_ items: [Syncable]) async
+    func getPendingSyncItems() async -> [Syncable]
+    
+    // 오프라인 지원
+    func isDataAvailableOffline() -> Bool
+    func loadCachedLeaderboard() -> LeaderboardData?
+    func updateLocalCache<T>(_ data: T, for key: String) async
+}
+
+protocol Syncable {
+    var id: String { get }
+    var lastModified: Date { get }
+    var needsSync: Bool { get set }
+}
+```
 
 #### SyncManager
 ```swift
 actor SyncManager {
     private let syncUseCase: SyncUseCaseProtocol
+    private let configManager: StaticConfigManager
     
-    func syncUserProgress() async throws
-    func checkQuizVersion() async throws -> Bool
+    @Published var syncStatus: SyncStatus = .idle
+    @Published var lastSyncTime: Date?
+    @Published var pendingSyncCount: Int = 0
+    
+    // 로컬 우선 데이터 관리
+    func initializeLocalData() async
+    func markPendingSync(for results: [QuizResult]) async
+    
+    // 수동 동기화 (사용자가 버튼 클릭 시에만)
+    func manualSync() async throws
+    func uploadPendingResults() async throws
     func downloadLatestQuizData() async throws
+    func updateLeaderboard() async throws // 하루 1회만
+    
+    // 정적 설정 관리
+    func checkStaticConfig() async throws -> StaticConfig
+    func downloadStaticConfig() async throws
+    
+    // 오프라인 지원
+    func isOfflineMode() -> Bool
+    func getCachedData<T>(_ type: T.Type) -> T?
+}
+
+enum SyncStatus {
+    case idle
+    case syncing(progress: Double)
+    case completed
+    case failed(Error)
+}
+
+struct StaticConfig {
+    let quizVersion: String
+    let downloadUrl: String
+    let categories: [String]
+    let maintenanceMode: Bool
+    let minAppVersion: String
+    let featureFlags: FeatureFlags
+}
+
+struct FeatureFlags {
+    let aiQuiz: Bool
+    let voiceMode: Bool
+    let offlineMode: Bool
 }
 ```
 
@@ -153,10 +265,36 @@ class User {
     var email: String?
     var displayName: String
     var authProvider: AuthProvider
+    var accountStatus: AccountStatus = .active
+    var isVerified: Bool = false
     var createdAt: Date
+    var lastLoginAt: Date?
     var lastSyncAt: Date?
+    var failedLoginAttempts: Int = 0
+    var lockedUntil: Date?
+    
+    // 사용자 설정 (로컬 저장)
+    var preferences: UserPreferences = UserPreferences()
+    var featureFlags: [String: Bool] = [:]
+    
+    // 세션 정보
+    var currentSessionId: String?
+    var sessionExpiresAt: Date?
     
     @Relationship(deleteRule: .cascade) var quizResults: [QuizResult]
+    @Relationship(deleteRule: .cascade) var quizSessions: [QuizSession]
+}
+
+enum AccountStatus: String, CaseIterable, Codable {
+    case active, suspended, locked
+}
+
+struct UserPreferences: Codable {
+    var language: String = "ko"
+    var notificationEnabled: Bool = true
+    var autoSyncEnabled: Bool = false // 수동 동기화 기본값
+    var theme: String = "system"
+    var offlineModeEnabled: Bool = true
 }
 ```
 
@@ -179,7 +317,7 @@ class QuizQuestion {
 #### QuizResult
 ```swift
 @Model
-class QuizResult {
+class QuizResult: Syncable {
     @Attribute(.unique) var id: String
     var userId: String
     var questionId: String
@@ -190,14 +328,20 @@ class QuizResult {
     var category: QuizCategory
     var quizMode: QuizMode
     
+    // 동기화 관련
+    var needsSync: Bool = true
+    var lastModified: Date = Date()
+    var syncedAt: Date?
+    
     @Relationship var user: User?
+    @Relationship var session: QuizSession?
 }
 ```
 
 #### QuizSession
 ```swift
 @Model
-class QuizSession {
+class QuizSession: Syncable {
     @Attribute(.unique) var id: String
     var userId: String
     var category: QuizCategory
@@ -208,7 +352,59 @@ class QuizSession {
     var startedAt: Date
     var completedAt: Date?
     
+    // 동기화 관련
+    var needsSync: Bool = true
+    var lastModified: Date = Date()
+    var syncedAt: Date?
+    
+    // 로컬 통계 계산용
+    var accuracy: Double {
+        guard totalQuestions > 0 else { return 0 }
+        return Double(correctAnswers) / Double(totalQuestions)
+    }
+    
     @Relationship var results: [QuizResult]
+    @Relationship var user: User?
+}
+
+// 로컬 통계 데이터
+struct UserStats: Codable {
+    let totalQuizzes: Int
+    let totalCorrectAnswers: Int
+    let totalQuestions: Int
+    let averageAccuracy: Double
+    let totalTimeSpent: TimeInterval
+    let categoryStats: [QuizCategory: CategoryStats]
+    let streakDays: Int
+    let lastPlayedAt: Date?
+    
+    // 로컬에서 계산
+    static func calculate(from sessions: [QuizSession]) -> UserStats {
+        // 로컬 데이터로 통계 계산 로직
+    }
+}
+
+struct CategoryStats: Codable {
+    let totalQuizzes: Int
+    let correctAnswers: Int
+    let accuracy: Double
+    let bestStreak: Int
+}
+
+// 리더보드 캐시 데이터
+struct LeaderboardData: Codable {
+    let rankings: [LeaderboardEntry]
+    let userRank: Int?
+    let lastUpdated: Date
+    let cacheExpiresAt: Date
+}
+
+struct LeaderboardEntry: Codable {
+    let userId: String
+    let displayName: String
+    let score: Int
+    let accuracy: Double
+    let rank: Int
 }
 ```
 
