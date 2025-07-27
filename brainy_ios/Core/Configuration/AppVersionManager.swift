@@ -21,8 +21,20 @@ actor AppVersionManager {
             let minRequiredVersion = config.minAppVersion
             let authMinVersion = config.authConfig.minAppVersionForAuth
             
+            // 보안 이벤트 로깅
+            await logVersionCheckEvent(
+                currentVersion: currentVersion,
+                requiredVersion: minRequiredVersion
+            )
+            
             // 전체 앱 버전 체크
             if !isVersionCompatible(current: currentVersion, minimum: minRequiredVersion) {
+                await logSecurityEvent(.appVersionMismatch, details: [
+                    "current_version": currentVersion,
+                    "required_version": minRequiredVersion,
+                    "check_type": "app_version"
+                ])
+                
                 return .updateRequired(
                     currentVersion: currentVersion,
                     requiredVersion: minRequiredVersion,
@@ -32,6 +44,12 @@ actor AppVersionManager {
             
             // 인증 기능 버전 체크
             if !isVersionCompatible(current: currentVersion, minimum: authMinVersion) {
+                await logSecurityEvent(.appVersionMismatch, details: [
+                    "current_version": currentVersion,
+                    "required_version": authMinVersion,
+                    "check_type": "auth_version"
+                ])
+                
                 return .authUpdateRequired(
                     currentVersion: currentVersion,
                     requiredVersion: authMinVersion,
@@ -43,8 +61,60 @@ actor AppVersionManager {
             
         } catch {
             print("Failed to validate app version: \(error)")
+            
+            await logSecurityEvent(.appVersionMismatch, details: [
+                "error": error.localizedDescription,
+                "check_type": "config_load_failed"
+            ])
+            
             // 설정을 가져올 수 없는 경우 호환 가능으로 처리
             return .compatible
+        }
+    }
+    
+    /// 강제 업데이트 필요 여부 확인
+    func isForceUpdateRequired() async -> Bool {
+        do {
+            let config = try await configManager.loadStaticConfig()
+            let currentVersion = getCurrentAppVersion()
+            
+            // 강제 업데이트 버전 목록이 있다면 확인
+            if let forceUpdateVersions = config.forceUpdateVersions {
+                return forceUpdateVersions.contains(currentVersion)
+            }
+            
+            return false
+        } catch {
+            return false
+        }
+    }
+    
+    /// 앱 버전 호환성 상세 정보
+    func getVersionCompatibilityInfo() async -> VersionCompatibilityInfo {
+        do {
+            let config = try await configManager.loadStaticConfig()
+            let currentVersion = getCurrentAppVersion()
+            let buildNumber = getCurrentBuildNumber()
+            
+            return VersionCompatibilityInfo(
+                currentVersion: currentVersion,
+                currentBuildNumber: buildNumber,
+                minRequiredVersion: config.minAppVersion,
+                authMinVersion: config.authConfig.minAppVersionForAuth,
+                isCompatible: isVersionCompatible(current: currentVersion, minimum: config.minAppVersion),
+                isAuthCompatible: isVersionCompatible(current: currentVersion, minimum: config.authConfig.minAppVersionForAuth),
+                lastChecked: Date()
+            )
+        } catch {
+            return VersionCompatibilityInfo(
+                currentVersion: getCurrentAppVersion(),
+                currentBuildNumber: getCurrentBuildNumber(),
+                minRequiredVersion: "1.0.0",
+                authMinVersion: "1.0.0",
+                isCompatible: true,
+                isAuthCompatible: true,
+                lastChecked: Date()
+            )
         }
     }
     
@@ -70,6 +140,26 @@ actor AppVersionManager {
     /// 버전 호환성 확인
     private func isVersionCompatible(current: String, minimum: String) -> Bool {
         return current.compare(minimum, options: .numeric) != .orderedAscending
+    }
+    
+    /// 버전 체크 이벤트 로깅
+    private func logVersionCheckEvent(currentVersion: String, requiredVersion: String) async {
+        await SecurityEventLogger.shared.logEvent(
+            type: .appVersionMismatch,
+            details: [
+                "current_version": currentVersion,
+                "required_version": requiredVersion,
+                "check_result": isVersionCompatible(current: currentVersion, minimum: requiredVersion) ? "compatible" : "incompatible"
+            ]
+        )
+    }
+    
+    /// 보안 이벤트 로깅
+    private func logSecurityEvent(_ type: SecurityEventType, details: [String: Any]) async {
+        await SecurityEventLogger.shared.logEvent(
+            type: type,
+            details: details
+        )
     }
 }
 
@@ -165,5 +255,35 @@ struct UpdateRequiredView: View {
         .padding(.vertical, 32)
         .background(Color.brainyBackground)
         .navigationBarHidden(true)
+    }
+}
+
+// MARK: - Version Compatibility Info
+
+struct VersionCompatibilityInfo {
+    let currentVersion: String
+    let currentBuildNumber: String
+    let minRequiredVersion: String
+    let authMinVersion: String
+    let isCompatible: Bool
+    let isAuthCompatible: Bool
+    let lastChecked: Date
+    
+    var needsUpdate: Bool {
+        return !isCompatible
+    }
+    
+    var needsAuthUpdate: Bool {
+        return !isAuthCompatible
+    }
+    
+    var statusMessage: String {
+        if !isCompatible {
+            return "앱 업데이트가 필요합니다"
+        } else if !isAuthCompatible {
+            return "로그인 기능 사용을 위해 업데이트가 필요합니다"
+        } else {
+            return "최신 버전입니다"
+        }
     }
 }

@@ -43,15 +43,48 @@ class AuthenticationViewModel: ObservableObject {
         
         guard validateEmailInput() else { return }
         
+        // 계정 잠금 상태 확인
+        let isLocked = await LoginAttemptManager.shared.isAccountLocked(email)
+        if isLocked {
+            if let timeUntilUnlock = await LoginAttemptManager.shared.getTimeUntilUnlock(for: email) {
+                let minutes = Int(timeUntilUnlock / 60)
+                errorMessage = "계정이 잠겼습니다. \(minutes)분 후에 다시 시도해주세요."
+            } else {
+                errorMessage = "계정이 잠겼습니다. 잠시 후 다시 시도해주세요."
+            }
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
         do {
             let user = try await authenticationUseCase.signInWithEmail(email: email, password: password)
+            
+            // 로그인 성공 기록
+            await LoginAttemptManager.shared.recordLoginAttempt(for: email, success: true)
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginSuccess,
+                identifier: email,
+                details: ["login_method": "email"]
+            )
+            
             currentUser = user
             isAuthenticated = true
             clearForm()
+            
         } catch {
+            // 로그인 실패 기록
+            await LoginAttemptManager.shared.recordLoginAttempt(for: email, success: false)
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginFailure,
+                identifier: email,
+                details: [
+                    "login_method": "email",
+                    "error": error.localizedDescription
+                ]
+            )
+            
             errorMessage = handleAuthError(error)
         }
         
@@ -70,9 +103,27 @@ class AuthenticationViewModel: ObservableObject {
         
         do {
             let user = try await authenticationUseCase.signInWithGoogle()
+            
+            // 로그인 성공 기록
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginSuccess,
+                identifier: user.email,
+                details: ["login_method": "google"]
+            )
+            
             currentUser = user
             isAuthenticated = true
+            
         } catch {
+            // 로그인 실패 기록
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginFailure,
+                details: [
+                    "login_method": "google",
+                    "error": error.localizedDescription
+                ]
+            )
+            
             errorMessage = handleAuthError(error)
         }
         
@@ -91,9 +142,27 @@ class AuthenticationViewModel: ObservableObject {
         
         do {
             let user = try await authenticationUseCase.signInWithApple()
+            
+            // 로그인 성공 기록
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginSuccess,
+                identifier: user.email,
+                details: ["login_method": "apple"]
+            )
+            
             currentUser = user
             isAuthenticated = true
+            
         } catch {
+            // 로그인 실패 기록
+            await SecurityEventLogger.shared.logEvent(
+                type: .loginFailure,
+                details: [
+                    "login_method": "apple",
+                    "error": error.localizedDescription
+                ]
+            )
+            
             errorMessage = handleAuthError(error)
         }
         

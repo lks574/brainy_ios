@@ -11,6 +11,7 @@ struct StaticConfig: Codable {
     let minAppVersion: String
     let featureFlags: FeatureFlags
     let authConfig: AuthStaticConfig
+    let forceUpdateVersions: [String]?
     
     enum CodingKeys: String, CodingKey {
         case quizVersion = "quiz_version"
@@ -20,6 +21,7 @@ struct StaticConfig: Codable {
         case minAppVersion = "min_app_version"
         case featureFlags = "feature_flags"
         case authConfig = "auth_config"
+        case forceUpdateVersions = "force_update_versions"
     }
 }
 
@@ -77,7 +79,8 @@ extension StaticConfig {
             sessionTimeoutMinutes: 60,
             maxLoginAttempts: 5,
             minAppVersionForAuth: "1.0.0"
-        )
+        ),
+        forceUpdateVersions: nil
     )
 }
 
